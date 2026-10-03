@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# 가상환경
+.venv/
+.venv-*/
+
+# 데이터: KUDGE는 `make data`로 내려받는다 (응답 본문이 31개 모델의 출력이라 넣지 않음)
+data/
+*.csv
+
+# 학습·서빙 산출물 (가중치, 예측 원문, 로그)
+outputs/
+runs/
+wandb/
+*.safetensors
+*.bin
+*.pt
+*.npz
+
+# 비밀
+.env
+*.key
+
+# OS·IDE
+.DS_Store
+.idea/
+.vscode/

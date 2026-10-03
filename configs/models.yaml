@@ -1,0 +1,19 @@
+# 판정 모델 후보. 라이선스는 모델 카드 메타데이터와 LICENSE 파일로 확인(2026-10-03).
+# revision은 확인 당시 main 커밋으로 고정한다.
+verified_on: '2026-10-03'
+allowed_licenses:
+- apache-2.0
+- mit
+models:
+  qwen3-4b:
+    hf_id: Qwen/Qwen3-4B-Instruct-2507
+    revision: cdbee75f17c01a7cc42f958dc650907174af0554
+    license: apache-2.0
+    architecture: Qwen3ForCausalLM
+    card: https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507
+  kanana-1.5-2.1b:
+    hf_id: kakaocorp/kanana-1.5-2.1b-instruct-2505
+    revision: 7df4bc35ccd610e451809d7106e1c3cf82bfd44c
+    license: apache-2.0
+    architecture: LlamaForCausalLM
+    card: https://huggingface.co/kakaocorp/kanana-1.5-2.1b-instruct-2505
