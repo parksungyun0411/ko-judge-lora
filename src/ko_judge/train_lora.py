@@ -41,7 +41,9 @@ def make_trainer(cfg, model_id: str, revision: str | None, train_ds, out_dir, se
         learning_rate=tr.learning_rate,
         per_device_train_batch_size=tr.per_device_batch_size,
         gradient_accumulation_steps=tr.grad_accum,
-        warmup_steps=tr.warmup_ratio,  # transformers 5: [0,1) 실수면 비율로 해석
+        # transformers 5.17 TrainingArguments: "A float in range [0, 1): interpreted as ratio of
+        # total training steps" (v5에서 warmup_ratio가 warmup_steps로 합쳐졌다)
+        warmup_steps=tr.warmup_ratio,
         lr_scheduler_type=tr.lr_scheduler,
         max_length=tr.max_length,
         gradient_checkpointing=tr.gradient_checkpointing,
