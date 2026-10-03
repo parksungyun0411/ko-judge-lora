@@ -1,0 +1,77 @@
+"""실제 KUDGE에 가짜 판정 모델을 붙여 예측 → 지표 경로를 확인한다."""
+
+import pandas as pd
+import pytest
+from conftest import needs_data
+
+from ko_judge import data as kd
+from ko_judge.evaluate import evaluate, summarize_seeds
+from ko_judge.predict import falseinfo_items, run_fold
+from ko_judge.prompts import score_only_prompt
+from ko_judge.splits import make_plan
+
+pytestmark = needs_data
+
+
+class OracleScorer:
+    """pointwise는 평가자 1 점수에 확률 1, 거짓 정보 응답(학습 행에 없는 프롬프트)은 1점."""
+
+    def __init__(self, pw):
+        self.by_prompt = {
+            score_only_prompt(q): int(s) for q, s in zip(pw.judge_query, pw.score1, strict=True)
+        }
+
+    def score(self, batch):
+        hits = [self.by_prompt.get(m[0]["content"], 1) for m in batch]
+        return [{"dist": {s: float(s == h) for s in range(1, 6)}} for h in hits]
+
+
+@pytest.fixture(scope="module")
+def setup():
+    pw = kd.load_pointwise()
+    plan = make_plan(pw)
+    fi = falseinfo_items(pw)
+    return pw, plan, fi
+
+
+def test_falseinfo_originals_found(setup):
+    pw, _, fi = setup
+    assert len(fi) == 54 and fi.original_row_id.notna().all()
+    assert set(pw.set_index("row_id").loc[fi.original_row_id, "final_score"]) <= {4.5, 5.0}
+
+
+def test_oracle_end_to_end(setup):
+    pw, plan, fi = setup
+    backend = OracleScorer(pw)
+    fold0 = run_fold(backend, "score", pw, fi, plan, 0, seed=0)
+    n_test = int(plan.test_mask(pw, 0).sum())
+    assert sum(r["kind"] == "pointwise" for r in fold0) == n_test
+
+    # 전체 fold를 돌리는 대신 정답으로 바로 만든 예측(속도)
+    preds = [
+        {"kind": "pointwise", "id": r, "score": int(s), "expected": float(s)}
+        for r, s in zip(pw.row_id, pw.score1, strict=True)
+    ]
+    preds += [{"kind": "falseinfo", "id": f, "score": 1, "expected": 1.0} for f in fi.false_id]
+    res = evaluate(pd.DataFrame(preds), pw, plan, n_boot=20)
+    a = res["agreement"]["all"]
+    # score1 대 평균: |s1 − (s1+s2)/2| = |s1−s2|/2 < 1 ⇔ 차이 2점 미만 → 2,506 − 405행
+    assert a["paper_acc"] == pytest.approx((2506 - 405) / 2506)
+    assert a["failures"] == 0
+    assert res["agreement"]["all"]["vs_annotators"]["exact"] == pytest.approx(
+        (1 + float((pw.score1 == pw.score2).mean())) / 2
+    )
+    assert res["ranking"]["tau_seen"] > 0.8
+    assert res["falseinfo"]["detected_rate"] == 1.0  # 원래 응답은 평가자 1 점수 4~5
+
+    s = summarize_seeds([res, res, res])
+    assert s["agreement.all.paper_acc"]["n_seeds"] == 3
+    assert s["agreement.all.paper_acc"]["sd"] == 0
+
+
+def test_missing_rows_rejected(setup):
+    pw, plan, _ = setup
+    with pytest.raises(ValueError, match="예측이 없는"):
+        evaluate(
+            pd.DataFrame([{"kind": "pointwise", "id": 0, "score": 1, "expected": 1.0}]), pw, plan
+        )

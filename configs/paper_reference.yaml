@@ -1,0 +1,29 @@
+# 논문 수치 인용 (재측정하지 않음). Son et al., "LLM-as-a-Judge & Reward Model: What They Can and
+# Cannot Do", arXiv:2409.11239v2 (2024-10-02). 쪽 번호는 arXiv PDF 기준.
+source: https://arxiv.org/abs/2409.11239
+pointwise_table3_page5:
+  metric: "off-by-0.5 정확도(%), 피어슨 r — KUDGE Original pointwise"
+  random_guess_acc: 30.86
+  rows:
+    GPT-4o: {acc: 61.26, pearson: 0.62}
+    Claude-3.5-Sonnet: {acc: 56.46, pearson: 0.59}
+    Llama-3.1-405B-Instruct (FP8): {acc: 58.88, pearson: 0.57}
+    Mistral-Large-Instruct: {acc: 58.44, pearson: 0.60}
+    Qwen2-72B-Instruct: {acc: 50.58, pearson: 0.62}
+    Llama-3.1-8B-Instruct: {acc: 29.96, pearson: 0.24}
+    Qwen2-7B-Instruct: {acc: 24.03, pearson: 0.20}
+    Qwen2-1.5B-Instruct: {acc: 13.65, pearson: 0.11}
+    EXAONE-3-7.8B-Instruct: {acc: 34.58, pearson: 0.39}
+fine_tuned_judge_table5_page7:
+  metric: "pointwise 정확도(%), 피어슨 r, 형식 실패(%)"
+  rows:
+    Mistral-7B: {acc: 20.29, pearson: 0.26, failure: 64.33}
+    Prometheus2-7b: {acc: 46.46, pearson: 0.43, failure: 7.7}
+    Mixtral-8x7B: {acc: 22.77, pearson: 0.27, failure: 19.6}
+    Prometheus2-8x7b: {acc: 46.45, pearson: 0.41, failure: 20.9}
+annotator_agreement:
+  section_3_2_page3: {identical_or_within_1: 83.85, diff_over_2: 8.36}
+  appendix_a2_page16: {identical: 52.2, one_point: 30.7, bigger_than_two: 17.1}
+falseinfo_pairwise_table8_page9:
+  metric: "원래 응답을 고른 비율(%)"
+  rows: {Claude-3.5-Sonnet: 68.52, GPT-4o: 66.67, OffsetBias-RM-8B: 42.59, FsfairX-RM-8B: 38.89}
