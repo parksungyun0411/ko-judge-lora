@@ -1,0 +1,71 @@
+{
+  "assumed": {
+    "per_model": {
+      "qwen3-4b": {
+        "train_tps": 2500,
+        "prefill_tps": 15000
+      },
+      "kanana-1.5-2.1b": {
+        "train_tps": 4500,
+        "prefill_tps": 25000
+      }
+    },
+    "common": {
+      "zero_shot_output_tokens": 300,
+      "decode_tps_batched": 1500,
+      "merge_awq_hours_per_fold": 0.25,
+      "server_start_hours": 0.05,
+      "loadtest_hours_per_variant": 0.1,
+      "setup_hours": 1.0,
+      "slack_ratio": 0.2
+    }
+  },
+  "models": {
+    "qwen3-4b": {
+      "prompt_tokens": {
+        "sum": 5165208,
+        "mean": 2061.1364724660816,
+        "p95": 2821.5,
+        "max": 6874
+      },
+      "train_tokens_per_run": 6143254.4,
+      "train_hours_per_run": 0.6825838222222222,
+      "parts_hours": {
+        "train": 10.238757333333332,
+        "eval_lora_bf16": 0.436956,
+        "zero_shot": 0.2848742222222222,
+        "merge_awq": 1.25,
+        "eval_merged_and_awq": 0.691304,
+        "loadtest": 0.2
+      },
+      "subtotal_hours": 13.101891555555554
+    },
+    "kanana-1.5-2.1b": {
+      "prompt_tokens": {
+        "sum": 4698911,
+        "mean": 1875.0642458100558,
+        "p95": 2591.5,
+        "max": 5721
+      },
+      "train_tokens_per_run": 5584942.4,
+      "train_hours_per_run": 0.3447495308641975,
+      "parts_hours": {
+        "train": 5.171242962962962,
+        "eval_lora_bf16": 0.30663036666666665,
+        "zero_shot": 0.24143234444444445,
+        "merge_awq": 1.25,
+        "eval_merged_and_awq": 0.6044202444444444,
+        "loadtest": 0.2
+      },
+      "subtotal_hours": 7.773725918518518
+    }
+  },
+  "total_hours_with_slack": 26.250740968888888,
+  "fallback_qwen3_only_hours_with_slack": 16.922269866666664,
+  "settings": {
+    "seeds": 3,
+    "epochs": 2.0,
+    "examples_per_row": 1,
+    "folds": 5
+  }
+}

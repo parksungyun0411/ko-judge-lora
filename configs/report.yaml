@@ -1,0 +1,23 @@
+# 결과 표의 행. reports/metrics/{metrics}.json(시드 묶음 또는 단일 실행), reports/throughput/{throughput}.json.
+# 파일이 없으면 그 칸은 '측정 전'.
+rows:
+  - name: Qwen3-4B 제로샷 (생성형, 논문 프롬프트)
+    metrics: zeroshot_qwen3-4b
+  - name: Qwen3-4B LoRA bf16 (시드 3, 어댑터 서빙)
+    metrics: lora_qwen3-4b_bf16
+  - name: Qwen3-4B LoRA 병합 bf16 (시드 0)
+    metrics: lora_qwen3-4b_merged_s0
+    throughput: lora_qwen3-4b_merged
+  - name: Qwen3-4B LoRA AWQ 4bit (시드 0)
+    metrics: lora_qwen3-4b_awq_s0
+    throughput: lora_qwen3-4b_awq
+  - name: kanana-1.5-2.1b 제로샷 (생성형, 논문 프롬프트)
+    metrics: zeroshot_kanana-1.5-2.1b
+  - name: kanana-1.5-2.1b LoRA bf16 (시드 3, 어댑터 서빙)
+    metrics: lora_kanana-1.5-2.1b_bf16
+  - name: kanana-1.5-2.1b LoRA 병합 bf16 (시드 0)
+    metrics: lora_kanana-1.5-2.1b_merged_s0
+    throughput: lora_kanana-1.5-2.1b_merged
+  - name: kanana-1.5-2.1b LoRA AWQ 4bit (시드 0)
+    metrics: lora_kanana-1.5-2.1b_awq_s0
+    throughput: lora_kanana-1.5-2.1b_awq
