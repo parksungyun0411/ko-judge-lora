@@ -1,0 +1,19 @@
+# 질문 5-fold × 학습 시드 3. fold·시드는 명령행에서 준다(make train-all MODEL=kanana-1.5-2.1b).
+model: kanana-1.5-2.1b
+target: sample        # 행마다 score1·score2 중 하나를 정답으로 (both면 토큰 2배)
+output_dir: outputs/lora/kanana-1.5-2.1b
+lora:
+  r: 16
+  alpha: 32
+  dropout: 0.05
+  target_modules: all-linear
+train:
+  epochs: 2
+  learning_rate: 1.0e-4
+  per_device_batch_size: 2
+  grad_accum: 8
+  warmup_ratio: 0.05
+  lr_scheduler: cosine
+  max_length: 8192    # 최대 프롬프트 6,874토큰(Qwen3) — 자르지 않는다
+  gradient_checkpointing: true
+  bf16: true
