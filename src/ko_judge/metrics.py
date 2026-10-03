@@ -87,7 +87,10 @@ def chance_off_by_half(final: Sequence[float]) -> dict:
 
 
 def wilson_interval(successes: int, n: int, z: float = 1.959963984540054) -> tuple[float, float]:
-    """rag-eval-harness의 stats.wilson_interval과 같은 식(그 저장소가 비공개라 복제했다)."""
+    """rag-eval-harness의 stats.wilson_interval과 같은 식.
+
+    그 저장소는 비공개라 CI에서 설치할 수 없어 의존성으로 넣지 않고 복제했다.
+    """
     if n <= 0 or not 0 <= successes <= n:
         raise ValueError("0 ≤ successes ≤ n, n ≥ 1")
     p = successes / n
