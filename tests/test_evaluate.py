@@ -75,3 +75,19 @@ def test_missing_rows_rejected(setup):
         evaluate(
             pd.DataFrame([{"kind": "pointwise", "id": 0, "score": 1, "expected": 1.0}]), pw, plan
         )
+
+
+def test_only_fold_uses_that_fold_only(setup):
+    pw, plan, fi = setup
+    test0 = pw[plan.test_mask(pw, 0)]
+    preds = [
+        {"kind": "pointwise", "id": r, "score": int(s), "expected": float(s)}
+        for r, s in zip(test0.row_id, test0.score1, strict=True)
+    ]
+    f0 = fi[fi.instruction.map(plan.fold_of_instruction) == 0]
+    preds += [{"kind": "falseinfo", "id": f, "score": 1, "expected": 1.0} for f in f0.false_id]
+    res = evaluate(pd.DataFrame(preds), pw, plan, n_boot=10, only_fold=0)
+    assert res["only_fold"] == 0 and res["n_rows"] == len(test0)
+    assert res["falseinfo"]["n"] == len(f0)
+    with pytest.raises(ValueError, match="예측이 없는"):
+        evaluate(pd.DataFrame(preds), pw, plan, n_boot=10)  # 전체 평가는 모든 fold가 필요

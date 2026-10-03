@@ -52,10 +52,11 @@ def estimate(
     train_rows_per_fold: list[np.ndarray],
     a: dict,
     folds: int,
-    seeds: int,
+    n_runs: int,
     epochs: float,
     examples_per_row: int,
 ) -> dict:
+    """n_runs = 학습 횟수(fold × 시드 조합 수). 어댑터 평가는 학습한 fold의 test만 판정한다."""
     c = ASSUMED_COMMON
     train_tok = np.mean([tokens[idx].sum() for idx in train_rows_per_fold]) * examples_per_row
     train_h_run = epochs * train_tok / a["train_tps"] / 3600
@@ -64,8 +65,8 @@ def estimate(
         full_prefill_h + len(tokens) * c["zero_shot_output_tokens"] / c["decode_tps_batched"] / 3600
     )
     parts = {
-        "train": train_h_run * folds * seeds,
-        "eval_lora_bf16": seeds * full_prefill_h + seeds * c["server_start_hours"],
+        "train": train_h_run * n_runs,
+        "eval_lora_bf16": n_runs / folds * full_prefill_h + c["server_start_hours"],
         "zero_shot": zs_h + c["server_start_hours"],
         "merge_awq": folds * c["merge_awq_hours_per_fold"],
         "eval_merged_and_awq": 2 * (full_prefill_h + folds * c["server_start_hours"]),
@@ -98,8 +99,11 @@ def main() -> None:
     for key in ("qwen3-4b", "kanana-1.5-2.1b"):
         tok = count_tokens(key, df.judge_query.tolist())
         est = estimate(
-            tok, idx, ASSUMED[key], folds, args.seeds, args.epochs, args.examples_per_row
+            tok, idx, ASSUMED[key], folds, folds * args.seeds, args.epochs, args.examples_per_row
         )
+        if key == "qwen3-4b":
+            # 축소안: Qwen3-4B 하나, 시드 0으로 5-fold 전체 + fold 0에서만 시드 1·2 추가 (학습 7회)
+            reduced = estimate(tok, idx, ASSUMED[key], folds, folds + 2, args.epochs, 1)
         out["models"][key] = {
             "prompt_tokens": {
                 "sum": int(tok.sum()),
@@ -115,6 +119,13 @@ def main() -> None:
     out["fallback_qwen3_only_hours_with_slack"] = (q + ASSUMED_COMMON["setup_hours"]) * (
         1 + ASSUMED_COMMON["slack_ratio"]
     )
+    out["reduced_plan"] = {
+        "description": "Qwen3-4B만, 시드 0 × fold 5 (2,506행 out-of-fold) + fold 0에서 시드 1·2 (학습 7회)",
+        "train_runs": folds + 2,
+        **reduced,
+        "hours_with_slack": (reduced["subtotal_hours"] + ASSUMED_COMMON["setup_hours"])
+        * (1 + ASSUMED_COMMON["slack_ratio"]),
+    }
     out["settings"] = vars(args) | {"folds": folds}
     Path("reports").mkdir(exist_ok=True)
     Path("reports/gpu_budget.json").write_text(json.dumps(out, ensure_ascii=False, indent=2) + "\n")
@@ -152,6 +163,23 @@ def render(o: dict) -> str:
         f"- 두 모델 전체 (준비 {o['assumed']['common']['setup_hours']}h, 여유 "
         f"{int(o['assumed']['common']['slack_ratio'] * 100)}% 포함): **약 {o['total_hours_with_slack']:.1f}h**",
         f"- 시간이 모자랄 때 Qwen3-4B 하나만: **약 {o['fallback_qwen3_only_hours_with_slack']:.1f}h**",
+        "",
+        "## 축소안 (약 10h 목표, 추정)",
+        "",
+        f"{o['reduced_plan']['description']}. 병합·AWQ·부하 측정은 기본안과 같다(시드 0).",
+        "",
+        "| 단계 | 추정 시간 (h) |",
+        "|---|---:|",
+        *[f"| {k} | {h:.2f} |" for k, h in o["reduced_plan"]["parts_hours"].items()],
+        f"| **합계 (준비·여유 포함)** | **{o['reduced_plan']['hours_with_slack']:.1f}** |",
+        "",
+        "축소안으로 말할 수 있는 것과 없는 것:",
+        "",
+        "- 가능: 시드 0 한 번의 out-of-fold 예측으로 2,506행 전체의 사람 점수 일치, 31개·보류 8개 모델 순위 τ, "
+        "질문 수별 부트스트랩 구간(질문 표본에 따른 변동), 제로샷 대 LoRA, 양자화 전후 차이, 건당 비용.",
+        "- 가능(제한적): 학습 시드에 따른 변동은 fold 0(test 질문 18개, 499행)에서 시드 3개로만 잰다.",
+        "- 불가: 전체 데이터 지표의 시드 간 구간(시드 3개 이상), 따라서 양자화 전후 차이나 제로샷 대비 개선이 "
+        "학습 시드 변동보다 큰지에 대한 전체 데이터 기준 판단. 모델 간 비교(kanana 제외).",
         "",
         "가정값: " + json.dumps(o["assumed"], ensure_ascii=False),
     ]

@@ -17,12 +17,39 @@ GPU 단계는 아직 한 번도 실행하지 않았습니다. 아래 순서와 �
 
 | 범위 | 추정 시간 |
 |---|---:|
-| 두 모델 전체 (fold 5 × 시드 3, 여유 20% 포함) | 약 26.3h |
-| Qwen3-4B 하나만 (시간이 모자랄 때) | 약 16.9h |
+| 두 모델 전체 (fold 5 × 시드 3, 여유 20% 포함) | 약 26.0h |
+| Qwen3-4B 하나만, fold 5 × 시드 3 | 약 16.8h |
+| 축소안: Qwen3-4B 하나, 시드 0 × fold 5 + fold 0에서 시드 1·2 (학습 7회) | 약 10.1h |
 
 비용은 `시간 × 시간당 요금`입니다. 대여 직전에 요금표를 확인하고 승인받은 뒤 시작합니다. 실제 요금은 `make report GPU_USD_PER_HOUR=…`에 넣습니다.
 
-## 실행 순서
+## 축소안 (약 10h, 추정)
+
+기본값(fold 5 × 시드 3, 두 모델)은 바꾸지 않았습니다. 시간을 10시간 안팎으로 맞추려면 아래처럼 돌립니다.
+
+```bash
+make zeroshot MODEL=qwen3-4b
+make train-all MODEL=qwen3-4b SEEDS=0               # fold 5 × 시드 0
+make train MODEL=qwen3-4b FOLD=0 SEED=1
+make train MODEL=qwen3-4b FOLD=0 SEED=2
+make eval-lora MODEL=qwen3-4b SEEDS=0               # 2,506행 out-of-fold, 시드 0
+make eval-seeds-fold0 MODEL=qwen3-4b SEEDS="0 1 2"  # fold 0에서만 시드 간 변동
+make merge-quant eval-merged eval-awq MODEL=qwen3-4b GPU_NAME="RTX 4090"
+make report GPU_USD_PER_HOUR=<실제 요금> GPU_NAME="RTX 4090"
+```
+
+축소안으로 말할 수 있는 것:
+
+- 시드 0 한 번의 out-of-fold 예측으로 2,506행 전체의 사람 점수 일치, 31개·보류 8개 모델 순위 τ, 질문 수별 부트스트랩 구간(질문 표본에 따른 변동)
+- 제로샷 대 LoRA, 병합 bf16 대 AWQ 4bit의 차이와 건당 비용
+- 학습 시드에 따른 변동 — 단, fold 0(test 질문 18개, 499행)에서 시드 3개로만
+
+말할 수 없는 것:
+
+- 전체 데이터 지표의 시드 간 구간. 그래서 양자화 전후 차이나 제로샷 대비 개선이 학습 시드에 따른 흔들림보다 큰지를 전체 데이터 기준으로 판단할 수 없습니다. fold 0의 시드 변동으로 짐작만 할 수 있습니다.
+- 판정 모델 간 비교(kanana-1.5-2.1b 제외)
+
+## 실행 순서 (기본안)
 
 ```bash
 # ── 서버 준비 ──
@@ -53,9 +80,10 @@ make report GPU_USD_PER_HOUR=<실제 요금> GPU_NAME="RTX 4090"
 
 ## 줄이는 순서 (시간이 모자랄 때)
 
-1. kanana-1.5-2.1b를 뺍니다. Qwen3-4B 하나로 모든 비교(제로샷 대 LoRA, 양자화 전후, 순위 재현)가 성립합니다.
-2. epoch를 2에서 1로 줄입니다(`configs/lora_qwen3-4b.yaml`). README에 바꾼 사실을 적습니다.
-3. 시드를 3에서 2로 줄이지는 않습니다. 시드 간 변동이 이 프로젝트의 주요 수치라서, 그 전에 fold 수를 바꾸는 쪽도 하지 않습니다(분할이 달라지면 데이터 프로파일과 맞지 않습니다).
+1. kanana-1.5-2.1b를 뺍니다(약 16.8h). Qwen3-4B 하나로 제로샷 대 LoRA, 양자화 전후, 순위 재현 비교가 모두 성립하고, 시드 3개 구간도 그대로 남습니다.
+2. 그래도 모자라면 위 축소안(약 10.1h)으로 갑니다. 전체 데이터 지표는 시드 하나가 되고, 시드 변동은 fold 0에서만 봅니다.
+3. epoch를 2에서 1로 줄이는 것은 마지막 수단입니다(`configs/lora_qwen3-4b.yaml`). 바꾸면 README에 적습니다.
+4. fold 수는 바꾸지 않습니다. 분할이 달라지면 데이터 프로파일·보류 모델과 맞지 않습니다.
 
 ## 먼저 확인할 것
 

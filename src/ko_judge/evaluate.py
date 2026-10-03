@@ -65,7 +65,14 @@ def _agreement(sub: pd.DataFrame) -> dict:
     }
 
 
-def evaluate(preds: pd.DataFrame, pw: pd.DataFrame, plan, n_boot: int = 1000) -> dict:
+def evaluate(
+    preds: pd.DataFrame, pw: pd.DataFrame, plan, n_boot: int = 1000, only_fold: int | None = None
+) -> dict:
+    """only_fold를 주면 그 fold의 test 행과 그 fold 질문의 거짓 정보 응답만으로 잰다
+    (축소안에서 fold 0의 시드 간 변동을 볼 때)."""
+    full_pw = pw
+    if only_fold is not None:
+        pw = pw[plan.test_mask(pw, only_fold)]
     p = preds[preds.kind == "pointwise"].set_index("id")
     missing = set(pw.row_id) - set(p.index)
     if missing:
@@ -83,7 +90,9 @@ def evaluate(preds: pd.DataFrame, pw: pd.DataFrame, plan, n_boot: int = 1000) ->
     held = list(plan.holdout_models)
     seen = sorted(set(human.index) - set(held))
 
-    fi = falseinfo_items(pw)
+    fi = falseinfo_items(full_pw)
+    if only_fold is not None:
+        fi = fi[fi.instruction.map(plan.fold_of_instruction) == only_fold]
     f = preds[preds.kind == "falseinfo"].set_index("id")
     fi["corrupted"] = fi.false_id.map(f["expected"]).where(
         fi.false_id.map(f["expected"]).notna(), fi.false_id.map(f["score"])
@@ -94,6 +103,7 @@ def evaluate(preds: pd.DataFrame, pw: pd.DataFrame, plan, n_boot: int = 1000) ->
     lo, hi = wilson_interval(int(detected.sum()), len(valid)) if len(valid) else (None, None)
 
     return {
+        "only_fold": only_fold,
         "n_rows": len(df),
         "agreement": {
             "all": _agreement(df),
@@ -103,8 +113,8 @@ def evaluate(preds: pd.DataFrame, pw: pd.DataFrame, plan, n_boot: int = 1000) ->
         },
         "ranking": {
             "tau_all": tau(judge, human),
-            "tau_holdout": tau(judge[judge.index.isin(held)], human[held]),
-            "tau_seen": tau(judge[judge.index.isin(seen)], human[seen]),
+            "tau_holdout": tau(judge[judge.index.isin(held)], human[human.index.isin(held)]),
+            "tau_seen": tau(judge[judge.index.isin(seen)], human[human.index.isin(seen)]),
             "judge_means": judge.to_dict(),
             "stability": bootstrap_ranking(
                 ok, "judge", ref_col="final_score", n_boot=n_boot, same_sample_ref=True
@@ -145,6 +155,7 @@ def main() -> None:
     r = sub.add_parser("run")
     r.add_argument("--tag", required=True)
     r.add_argument("--n-boot", type=int, default=1000)
+    r.add_argument("--only-fold", type=int, default=None, help="이 fold의 test만 평가")
     s = sub.add_parser("seeds")
     s.add_argument("--group", required=True)
     s.add_argument("--tags", nargs="+", required=True)
@@ -155,9 +166,10 @@ def main() -> None:
         pw = kd.load_pointwise()
         res = {
             "tag": args.tag,
-            **evaluate(load_predictions(args.tag), pw, make_plan(pw), args.n_boot),
+            **evaluate(load_predictions(args.tag), pw, make_plan(pw), args.n_boot, args.only_fold),
         }
-        (METRICS_DIR / f"{args.tag}.json").write_text(
+        name = args.tag if args.only_fold is None else f"{args.tag}_fold{args.only_fold}"
+        (METRICS_DIR / f"{name}.json").write_text(
             json.dumps(res, ensure_ascii=False, indent=2, default=float) + "\n"
         )
         a = res["agreement"]["all"]

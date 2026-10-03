@@ -31,14 +31,14 @@
       "train_tokens_per_run": 6143254.4,
       "train_hours_per_run": 0.6825838222222222,
       "parts_hours": {
-        "train": 10.238757333333332,
-        "eval_lora_bf16": 0.436956,
+        "train": 10.238757333333334,
+        "eval_lora_bf16": 0.336956,
         "zero_shot": 0.2848742222222222,
         "merge_awq": 1.25,
         "eval_merged_and_awq": 0.691304,
         "loadtest": 0.2
       },
-      "subtotal_hours": 13.101891555555554
+      "subtotal_hours": 13.001891555555556
     },
     "kanana-1.5-2.1b": {
       "prompt_tokens": {
@@ -50,18 +50,34 @@
       "train_tokens_per_run": 5584942.4,
       "train_hours_per_run": 0.3447495308641975,
       "parts_hours": {
-        "train": 5.171242962962962,
-        "eval_lora_bf16": 0.30663036666666665,
+        "train": 5.171242962962963,
+        "eval_lora_bf16": 0.20663036666666668,
         "zero_shot": 0.24143234444444445,
         "merge_awq": 1.25,
         "eval_merged_and_awq": 0.6044202444444444,
         "loadtest": 0.2
       },
-      "subtotal_hours": 7.773725918518518
+      "subtotal_hours": 7.673725918518518
     }
   },
-  "total_hours_with_slack": 26.250740968888888,
-  "fallback_qwen3_only_hours_with_slack": 16.922269866666664,
+  "total_hours_with_slack": 26.010740968888886,
+  "fallback_qwen3_only_hours_with_slack": 16.802269866666666,
+  "reduced_plan": {
+    "description": "Qwen3-4B만, 시드 0 × fold 5 (2,506행 out-of-fold) + fold 0에서 시드 1·2 (학습 7회)",
+    "train_runs": 7,
+    "train_tokens_per_run": 6143254.4,
+    "train_hours_per_run": 0.6825838222222222,
+    "parts_hours": {
+      "train": 4.778086755555556,
+      "eval_lora_bf16": 0.1839128,
+      "zero_shot": 0.2848742222222222,
+      "merge_awq": 1.25,
+      "eval_merged_and_awq": 0.691304,
+      "loadtest": 0.2
+    },
+    "subtotal_hours": 7.388177777777778,
+    "hours_with_slack": 10.065813333333333
+  },
   "settings": {
     "seeds": 3,
     "epochs": 2.0,

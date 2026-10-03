@@ -21,7 +21,7 @@ LORA_DIR = outputs/lora/$(MODEL)
 LORA_MODULES = $(foreach s,$(SEEDS),$(foreach f,$(FOLDS),$(MODEL)-f$(f)-s$(s)=$(LORA_DIR)/fold$(f)_seed$(s)))
 
 .PHONY: help setup-dev test lint smoke data profile budget setup-gpu zeroshot train train-all \
-        eval-lora merge-quant eval-merged eval-awq report
+        eval-lora eval-seeds-fold0 merge-quant eval-merged eval-awq report
 
 help:
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -76,6 +76,16 @@ eval-lora: ## 기반 모델 + 어댑터 전부를 한 서버로 → 시드별 �
 	  done; $(SERVE_PY) -m ko_judge.evaluate run --tag lora_$(MODEL)_bf16_s$$s || exit 1; done'
 	$(PY) -m ko_judge.evaluate seeds --group lora_$(MODEL)_bf16 \
 	  --tags $(foreach s,$(SEEDS),lora_$(MODEL)_bf16_s$(s))
+
+eval-seeds-fold0: ## 축소안: fold 0 시드별 어댑터로 학습 시드 변동 (SEEDS=0 1 2)
+	scripts/with_vllm.sh $(HF_ID) $(MODEL) --revision $(REVISION) --enable-lora --max-lora-rank 16 \
+	  --max-loras 4 --lora-modules $(foreach s,$(SEEDS),$(MODEL)-f0-s$(s)=$(LORA_DIR)/fold0_seed$(s)) \
+	  -- bash -c 'for s in $(SEEDS); do \
+	    $(SERVE_PY) -m ko_judge.predict --mode score --served $(MODEL)-f0-s$$s --fold 0 \
+	      --tag lora_$(MODEL)_f0only_s$$s || exit 1; \
+	    $(SERVE_PY) -m ko_judge.evaluate run --tag lora_$(MODEL)_f0only_s$$s --only-fold 0 || exit 1; done'
+	$(PY) -m ko_judge.evaluate seeds --group lora_$(MODEL)_fold0_seeds \
+	  --tags $(foreach s,$(SEEDS),lora_$(MODEL)_f0only_s$(s)_fold0)
 
 merge-quant: ## 시드 0의 fold별 어댑터 병합 → AWQ 4bit
 	for f in $(FOLDS); do \
