@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>ko-judge-lora · 구성</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: #f4f5f7; }
+  body { font-family: "Apple SD Gothic Neo", "Pretendard", -apple-system, system-ui, sans-serif;
+         -webkit-font-smoothing: antialiased; padding: 28px; }
+  .wrap { width: 960px; background: #fff; border: 1px solid #e3e6ea; border-radius: 16px; padding: 28px 30px; }
+  h1 { font-size: 13px; font-weight: 800; color: #8a94a3; letter-spacing: .04em; margin-bottom: 20px; }
+  h1 b { color: #0f5132; }
+  .row { display: flex; gap: 14px; align-items: stretch; }
+  .tag { flex: 0 0 92px; display: flex; flex-direction: column; justify-content: center; }
+  .tag .en { font-size: 11px; font-weight: 800; color: #6b7480; letter-spacing: .06em; }
+  .tag .ko { font-size: 13px; font-weight: 700; color: #2f3742; margin-top: 2px; }
+  .lane { flex: 1; display: flex; gap: 10px; align-items: center; border: 1.5px solid #e4e8ec;
+          background: #fafbfc; border-radius: 12px; padding: 12px 14px; }
+  .box { flex: 1; background: #fff; border: 1.5px solid #ccd3db; border-radius: 9px; padding: 9px 12px; }
+  .box .t { font-size: 14.5px; font-weight: 800; color: #26303b; }
+  .box .s { font-size: 11.8px; color: #66707c; margin-top: 3px; line-height: 1.45; }
+  .green { background: #ecf7f0; border-color: #b6dfc5; } .green .t { color: #14532d; }
+  .amber { background: #fff8eb; border-color: #f3d39b; } .amber .t { color: #7c4a03; }
+  .blue  { background: #eef4fd; border-color: #bcd3f5; } .blue .t { color: #1d3f7a; }
+  .grey  { background: #f3f4f6; border-color: #d6dae0; }
+  .arrow { color: #b8c0ca; font-size: 17px; flex: 0 0 auto; }
+  .down { margin-left: 106px; color: #c3cad3; font-size: 15px; padding: 5px 0; }
+  .note { font-size: 11.5px; color: #8a94a3; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><b>ko-judge-lora</b> · 한국어 LLM 평가자 LoRA — 데이터에서 비용까지</h1>
+
+  <div class="row">
+    <div class="tag"><div class="en">DATA</div><div class="ko">데이터</div></div>
+    <div class="lane">
+      <div class="box grey"><div class="t">KUDGE pointwise</div><div class="s">2,506행 · 질문 87 · 모델 31<br>평가자 2명 점수 (score1·score2)</div></div>
+      <div class="box grey"><div class="t">거짓 정보 주입</div><div class="s">54행 · 질문 30<br>원래 응답과 짝</div></div>
+      <div class="box grey"><div class="t">고정 커밋 내려받기</div><div class="s">GitHub 09e1316 (MIT)<br>sha256 확인, 저장소에 넣지 않음</div></div>
+    </div>
+  </div>
+  <div class="down">▼</div>
+
+  <div class="row">
+    <div class="tag"><div class="en">SPLIT</div><div class="ko">분할</div></div>
+    <div class="lane">
+      <div class="box amber"><div class="t">질문 5-fold</div><div class="s">test 질문은 train에 없음</div></div>
+      <div class="arrow">∩</div>
+      <div class="box amber"><div class="t">보류 모델 8개</div><div class="s">사람 순위 구간마다 1개<br>어느 fold에서도 학습 안 함</div></div>
+      <div class="arrow">→</div>
+      <div class="box amber"><div class="t">out-of-fold 예측</div><div class="s">5번 학습으로 2,506행 전체를 덮음</div></div>
+    </div>
+  </div>
+  <div class="down">▼</div>
+
+  <div class="row">
+    <div class="tag"><div class="en">TRAIN</div><div class="ko">학습</div></div>
+    <div class="lane">
+      <div class="box green"><div class="t">Qwen3-4B · kanana-1.5-2.1b</div><div class="s">Apache-2.0, 커밋 고정</div></div>
+      <div class="arrow">→</div>
+      <div class="box green"><div class="t">LoRA (PEFT + TRL)</div><div class="s">정답 = 평가자 점수 숫자 1개<br>fold 5 × 시드 3</div></div>
+      <div class="arrow">→</div>
+      <div class="box green"><div class="t">병합 → AWQ 4bit</div><div class="s">llm-compressor W4A16<br>보정 데이터는 train fold에서만</div></div>
+    </div>
+  </div>
+  <div class="down">▼</div>
+
+  <div class="row">
+    <div class="tag"><div class="en">SERVE</div><div class="ko">서빙</div></div>
+    <div class="lane">
+      <div class="box blue"><div class="t">vLLM 제로샷</div><div class="s">논문 프롬프트, 피드백 후 [RESULT]</div></div>
+      <div class="box blue"><div class="t">vLLM 어댑터 서빙</div><div class="s">기반 모델 1개 + 어댑터 15개</div></div>
+      <div class="box blue"><div class="t">병합 bf16 / AWQ</div><div class="s">점수 토큰 logprob → 분포<br>부하 측정 (건/s, p95)</div></div>
+    </div>
+  </div>
+  <div class="down">▼</div>
+
+  <div class="row">
+    <div class="tag"><div class="en">EVAL</div><div class="ko">평가</div></div>
+    <div class="lane">
+      <div class="box"><div class="t">사람 점수 일치</div><div class="s">off-by-0.5 (논문 정의)<br>평가자 간 일치 = 상한</div></div>
+      <div class="box"><div class="t">모델 순위 재현</div><div class="s">Kendall τ: 31개 / 보류 8개<br>질문 수별 부트스트랩</div></div>
+      <div class="box"><div class="t">거짓 정보·비용</div><div class="s">오염 응답 감점 여부<br>$/100만 건 = $/h ÷ (건/s×3600)</div></div>
+    </div>
+  </div>
+
+  <div class="note">수치는 모두 reports/에서 읽는다. 모델 실행 결과는 아직 없다(측정 전).</div>
+</div>
+</body>
+</html>
