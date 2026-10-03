@@ -10,6 +10,8 @@ import yaml
 from ko_judge.prompts import TARGET_MODES
 
 MODELS_YAML = Path(__file__).resolve().parents[2] / "configs" / "models.yaml"
+# 정답(숫자 한 글자) + 채팅 템플릿의 턴 종료 토큰을 넉넉히 덮는 여유
+ANSWER_TOKEN_MARGIN = 8
 
 
 class ConfigError(ValueError):
@@ -24,6 +26,7 @@ class ModelSpec:
     license: str
     architecture: str
     card: str
+    max_prompt_tokens: int
 
 
 def load_models(path: str | Path = MODELS_YAML) -> dict[str, ModelSpec]:
@@ -55,7 +58,7 @@ class TrainSection:
     grad_accum: int = 8
     warmup_ratio: float = 0.05
     lr_scheduler: str = "cosine"
-    max_length: int = 4096
+    max_length: int = 8192
     gradient_checkpointing: bool = True
     bf16: bool = True
     logging_steps: int = 10
@@ -94,9 +97,15 @@ def validate(cfg: TrainConfig, models: dict[str, ModelSpec]) -> None:
         raise ConfigError("epochs·batch·grad_accum은 양수")
     if not 0 <= tr.warmup_ratio < 1:
         raise ConfigError("train.warmup_ratio는 [0, 1)")
-    if tr.max_length < 2048:
-        # judge_query는 Qwen3 토크나이저로 평균 2,040토큰, 최대 6,853토큰(reports/gpu_budget.md)
-        raise ConfigError("train.max_length가 너무 짧다 (프롬프트 중앙값이 2천 토큰대)")
+    need = models[cfg.model].max_prompt_tokens + ANSWER_TOKEN_MARGIN
+    if tr.max_length < need:
+        # TRL은 max_length를 넘는 예제를 뒤에서 자른다. 정답 숫자가 잘리면 그 예제는 손실이 0이 되어
+        # 조용히 학습에서 빠지므로, 가장 긴 프롬프트 + 정답이 들어가지 않으면 학습을 거부한다.
+        raise ConfigError(
+            f"train.max_length {tr.max_length} < {need} "
+            f"(가장 긴 프롬프트 {models[cfg.model].max_prompt_tokens} "
+            f"+ 정답 여유 {ANSWER_TOKEN_MARGIN})"
+        )
 
 
 def load_train_config(path: str | Path, models_path: str | Path = MODELS_YAML) -> TrainConfig:

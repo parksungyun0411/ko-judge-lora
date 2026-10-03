@@ -11,9 +11,13 @@ models:
     license: apache-2.0
     architecture: Qwen3ForCausalLM
     card: https://huggingface.co/Qwen/Qwen3-4B-Instruct-2507
+    # 가장 긴 학습 프롬프트(채팅 템플릿 포함, reports/gpu_budget.json의 prompt_tokens.max)
+    max_prompt_tokens: 6874
   kanana-1.5-2.1b:
     hf_id: kakaocorp/kanana-1.5-2.1b-instruct-2505
     revision: 7df4bc35ccd610e451809d7106e1c3cf82bfd44c
     license: apache-2.0
     architecture: LlamaForCausalLM
     card: https://huggingface.co/kakaocorp/kanana-1.5-2.1b-instruct-2505
+    # 가장 긴 학습 프롬프트(채팅 템플릿 포함, reports/gpu_budget.json의 prompt_tokens.max)
+    max_prompt_tokens: 5721
