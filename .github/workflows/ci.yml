@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install
+        run: pip install -e ".[dev]"
+      - name: data
+        # KUDGE 평가 파일(GitHub, MIT)을 고정 커밋에서 내려받아 sha256을 확인한다
+        run: python -m ko_judge.data
+      - name: lint
+        run: |
+          ruff check .
+          ruff format --check .
+      - name: test
+        # torch·transformers가 없으므로 스모크 학습·compat 테스트는 건너뛴다
+        run: pytest -q -rs
