@@ -2,6 +2,8 @@
 
 `make report`가 reports/metrics·reports/throughput에서 생성한다. 손으로 고치지 않는다.
 
+판정 지표는 모두 정수 판정 기준이다(제로샷은 `[RESULT]` 정수, LoRA는 점수 분포의 argmax). LoRA의 기댓값(연속 점수) 지표는 reports/metrics/*.json의 `expected`에 따로 있다.
+
 GPU: 측정 전 · 요금 측정 전
 
 | 구성 | off-by-0.5 정확도 | 피어슨 r | τ (31개 모델) | τ (보류 8개) | 거짓 정보 감지율 | 건/s | p95 (ms) | $/100만 건 |

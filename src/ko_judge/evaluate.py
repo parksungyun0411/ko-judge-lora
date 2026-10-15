@@ -5,12 +5,20 @@
 
 지표
 - 사람 점수 일치: 논문 정의 off-by-0.5(형식 실패 제외 / 포함 두 가지), 피어슨,
-  평가자 개인 점수와의 완전 일치·1점 이내(사람 간 일치와 같은 척도).
+  평가자 개인 점수와의 완전 일치·1점 이내·피어슨(사람 간 일치와 같은 척도).
 - 순위 재현: 판정 점수 평균으로 매긴 모델 순위와 사람 순위의 Kendall τ.
   전체 31개, 보류 모델 8개(학습에서 한 번도 못 본 모델), 학습에 쓰인 모델 23개 따로.
 - 순위 안정성: 같은 질문 n개 표본에서 판정 순위 대 사람 순위 τ (부트스트랩).
-- 거짓 정보: 오염된 응답 점수가 원래 응답 점수보다 낮으면 '감지'. 논문 7절은 피드백 글을
-  사람이 읽어 판단했고 점수 비교는 하지 않았으므로 이 정의는 이 프로젝트의 것이다.
+- 거짓 정보: 오염된 응답 점수가 원래 응답 점수보다 낮으면 '감지'. 동점은 감지가 아니다.
+  논문 7절은 피드백 글을 사람이 읽어 판단했고 점수 비교는 하지 않았으므로 이 정의는 이
+  프로젝트의 것이다.
+
+판정 점수의 해상도
+- 위 지표는 모두 정수 판정으로 낸다. 제로샷(생성형)은 [RESULT] 정수, LoRA(점수만 모드)는 점수
+  분포의 argmax다. 제로샷 대 LoRA를 같은 해상도로 비교하기 위해서다. 결과 표는 이 값을 쓴다.
+- LoRA처럼 점수 분포가 있으면 기댓값(연속 점수)으로 낸 피어슨·순위 τ·거짓 정보 감지율을
+  `expected`에 따로 남긴다. 연속 점수는 동점이 거의 없어, 구분 능력이 없는 판정도 거짓 정보
+  감지율이 약 50%가 나온다. 정수 판정 쪽에는 동점 비율(`tie_rate`)을 함께 남긴다.
 """
 
 from __future__ import annotations
@@ -39,11 +47,17 @@ SEED_KEYS = (
     ("agreement", "all", "paper_acc"),
     ("agreement", "all", "strict_acc"),
     ("agreement", "all", "pearson"),
+    ("agreement", "all", "vs_annotators", "pearson"),
     ("agreement", "holdout_models", "paper_acc"),
     ("ranking", "tau_all"),
     ("ranking", "tau_holdout"),
     ("ranking", "tau_seen"),
     ("falseinfo", "detected_rate"),
+    ("falseinfo", "tie_rate"),
+    ("expected", "pearson"),
+    ("expected", "ranking", "tau_all"),
+    ("expected", "ranking", "tau_holdout"),
+    ("expected", "falseinfo", "detected_rate"),
 )
 
 
@@ -55,13 +69,47 @@ def load_predictions(tag: str, pred_dir: Path = PRED_DIR) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def _values(col: pd.Series) -> list[float | None]:
+    return [None if pd.isna(v) else float(v) for v in col]
+
+
 def _agreement(sub: pd.DataFrame) -> dict:
+    """정수 판정(score)으로 잰 사람 점수 일치."""
     score = [None if pd.isna(v) else int(v) for v in sub["score"]]
-    cont = [None if pd.isna(v) else float(v) for v in sub["judge"]]
     return {
         **off_by_half(score, sub["final_score"]),
-        "pearson": pearson(cont, sub["final_score"].tolist()),
+        "pearson": pearson(score, sub["final_score"].tolist()),
         "vs_annotators": judge_vs_annotators(score, sub["score1"], sub["score2"]),
+    }
+
+
+def _ranking(
+    df: pd.DataFrame, col: str, human: pd.Series, held: list[str], seen: list[str]
+) -> dict:
+    judge = model_means(df[df[col].notna()], col)
+    return {
+        "tau_all": tau(judge, human),
+        "tau_holdout": tau(judge[judge.index.isin(held)], human[human.index.isin(held)]),
+        "tau_seen": tau(judge[judge.index.isin(seen)], human[human.index.isin(seen)]),
+        "judge_means": judge.to_dict(),
+    }
+
+
+def _falseinfo(fi: pd.DataFrame, f: pd.DataFrame, df: pd.DataFrame, col: str) -> dict:
+    """오염된 응답과 원래 응답을 같은 판정 점수(col)로 비교한다."""
+    fi = fi.copy()
+    fi["corrupted"] = fi.false_id.map(f[col])
+    fi["original"] = fi.original_row_id.map(df.set_index("row_id")[col])
+    valid = fi.dropna(subset=["corrupted", "original"])
+    detected = valid.corrupted < valid.original
+    lo, hi = wilson_interval(int(detected.sum()), len(valid)) if len(valid) else (None, None)
+    return {
+        "n": len(fi),
+        "scored": len(valid),
+        "detected_rate": float(detected.mean()) if len(valid) else None,
+        "detected_ci": [lo, hi],
+        "tie_rate": float((valid.corrupted == valid.original).mean()) if len(valid) else None,
+        "by_type": {t: float((g.corrupted < g.original).mean()) for t, g in valid.groupby("type")},
     }
 
 
@@ -78,15 +126,13 @@ def evaluate(
     if missing:
         raise ValueError(f"예측이 없는 pointwise 행 {len(missing)}개 — 모든 fold를 돌려야 한다")
     df = pw.copy()
-    df["score"] = df.row_id.map(p["score"])
-    # 연속 점수가 있으면(점수만 모드) 기댓값, 없으면(생성형) 정수 점수로 순위를 낸다
-    exp = df.row_id.map(p["expected"]) if "expected" in p else None
-    df["judge"] = exp.where(exp.notna(), df["score"]) if exp is not None else df["score"]
+    df["score"] = df.row_id.map(p["score"]).astype(float)
+    # 점수만 모드(LoRA)는 점수 분포의 기댓값도 있다. 생성형(제로샷)은 None
+    df["expected"] = df.row_id.map(p["expected"]).astype(float) if "expected" in p else np.nan
+    has_expected = bool(df["expected"].notna().any())
     hold = df.model.isin(plan.holdout_models)
 
-    ok = df[df.judge.notna()]
     human = model_means(df, "final_score")
-    judge = model_means(ok, "judge")
     held = list(plan.holdout_models)
     seen = sorted(set(human.index) - set(held))
 
@@ -94,46 +140,47 @@ def evaluate(
     if only_fold is not None:
         fi = fi[fi.instruction.map(plan.fold_of_instruction) == only_fold]
     f = preds[preds.kind == "falseinfo"].set_index("id")
-    fi["corrupted"] = fi.false_id.map(f["expected"]).where(
-        fi.false_id.map(f["expected"]).notna(), fi.false_id.map(f["score"])
+    f = f.assign(
+        score=f["score"].astype(float),
+        expected=f["expected"].astype(float) if "expected" in f else np.nan,
     )
-    fi["original"] = fi.original_row_id.map(df.set_index("row_id")["judge"])
-    valid = fi.dropna(subset=["corrupted", "original"])
-    detected = valid.corrupted < valid.original
-    lo, hi = wilson_interval(int(detected.sum()), len(valid)) if len(valid) else (None, None)
 
-    return {
+    out = {
         "only_fold": only_fold,
         "n_rows": len(df),
+        "judge_score": "integer",
         "agreement": {
             "all": _agreement(df),
             "holdout_models": _agreement(df[hold]),
             "seen_models": _agreement(df[~hold]),
-            "human_ceiling": pair_agreement(df.score1, df.score2),
+            "human_reference": pair_agreement(df.score1, df.score2),
         },
         "ranking": {
-            "tau_all": tau(judge, human),
-            "tau_holdout": tau(judge[judge.index.isin(held)], human[human.index.isin(held)]),
-            "tau_seen": tau(judge[judge.index.isin(seen)], human[human.index.isin(seen)]),
-            "judge_means": judge.to_dict(),
+            **_ranking(df, "score", human, held, seen),
             "stability": bootstrap_ranking(
-                ok, "judge", ref_col="final_score", n_boot=n_boot, same_sample_ref=True
+                df[df.score.notna()],
+                "score",
+                ref_col="final_score",
+                n_boot=n_boot,
+                same_sample_ref=True,
             ),
         },
-        "falseinfo": {
-            "n": len(fi),
-            "scored": len(valid),
-            "detected_rate": float(detected.mean()) if len(valid) else None,
-            "detected_ci": [lo, hi],
-            "by_type": {
-                t: float((g.corrupted < g.original).mean()) for t, g in valid.groupby("type")
-            },
-        },
+        "falseinfo": _falseinfo(fi, f, df, "score"),
+        "expected": None,
     }
+    if has_expected:
+        out["expected"] = {
+            "pearson": pearson(_values(df["expected"]), df["final_score"].tolist()),
+            "ranking": _ranking(df, "expected", human, held, seen),
+            "falseinfo": _falseinfo(fi, f, df, "expected"),
+        }
+    return out
 
 
-def _get(d: dict, path: tuple):
+def _get(d: dict | None, path: tuple):
     for k in path:
+        if not isinstance(d, dict) or k not in d:
+            return None
         d = d[k]
     return d
 

@@ -41,6 +41,13 @@ def test_judge_vs_annotators():
     r = judge_vs_annotators([2, 4, None], [2, 3, 1], [3, 5, 1])
     assert r["exact"] == pytest.approx((1 / 3 + 0) / 2)
     assert r["within_1"] == pytest.approx(2 / 3)
+    assert r["pearson"] is None  # 형식 실패를 빼면 2행뿐이라 계산하지 않는다
+
+
+def test_judge_vs_annotators_pearson_is_mean_of_per_annotator_r():
+    pred, s1, s2 = [1, 2, 3, 4, 5], [1, 2, 4, 4, 5], [2, 2, 3, 5, 4]
+    r = judge_vs_annotators(pred, s1, s2)
+    assert r["pearson"] == pytest.approx((pearson(pred, s1) + pearson(pred, s2)) / 2)
 
 
 def test_chance_hand_computed():

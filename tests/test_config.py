@@ -31,6 +31,7 @@ def test_shipped_configs_validate(path):
         ({"model": "qwen3-4b", "lora": {"r": 0}}, "양수"),
         ({"model": "qwen3-4b", "train": {"max_length": 1024}}, "max_length"),
         ({"model": "qwen3-4b", "train": {"learning_rate": 0.5}}, "learning_rate"),
+        ({"model": "qwen3-4b", "train": {"fp16": True}}, "함께 켤 수 없다"),  # bf16 기본값과 충돌
     ],
 )
 def test_invalid_configs(tmp_path, doc, match):
@@ -84,3 +85,21 @@ def test_max_prompt_tokens_match_budget_report():
     budget = json.loads((Path(__file__).parents[1] / "reports/gpu_budget.json").read_text())
     for key, m in load_models().items():
         assert m.max_prompt_tokens == budget["models"][key]["prompt_tokens"]["max"]
+
+
+def test_fp16_path_dtypes():
+    """T4용 fp16 경로: 학습 기반 가중치 dtype과 HF 생성 백엔드의 dtype 선택."""
+    from types import SimpleNamespace
+
+    from ko_judge.generation import auto_dtype
+    from ko_judge.train_lora import model_dtype
+
+    assert model_dtype(SimpleNamespace(bf16=True, fp16=False)) == "bfloat16"
+    assert model_dtype(SimpleNamespace(bf16=False, fp16=True)) == "float16"
+    assert model_dtype(SimpleNamespace(bf16=False, fp16=False)) == "float32"
+    cuda = SimpleNamespace(is_bf16_supported=lambda: False)
+    torch = SimpleNamespace(float32="f32", bfloat16="bf16", float16="f16", cuda=cuda)
+    assert auto_dtype(torch, "cpu") == "f32"
+    assert auto_dtype(torch, "cuda") == "f16"  # T4
+    cuda.is_bf16_supported = lambda: True
+    assert auto_dtype(torch, "cuda") == "bf16"

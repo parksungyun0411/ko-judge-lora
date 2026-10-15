@@ -18,7 +18,8 @@ from ko_judge.data import load_pointwise
 from ko_judge.prompts import score_only_messages
 from ko_judge.splits import make_plan
 
-# 가정값 (RTX 4090 24GB 1장 기준으로 잡은 출발점. 측정 아님)
+# 가정값 (ASSUMED_GPU 기준으로 잡은 출발점. 측정 아님)
+ASSUMED_GPU = "RTX 4090 24GB 1장"
 ASSUMED = {
     "qwen3-4b": {"train_tps": 2500, "prefill_tps": 15000},
     "kanana-1.5-2.1b": {"train_tps": 4500, "prefill_tps": 25000},
@@ -139,7 +140,8 @@ def render(o: dict) -> str:
         "# GPU 시간 추정 (측정 아님)",
         "",
         "`make budget`로 생성. 프롬프트 토큰 수는 실제 데이터(2,506행)를 각 모델의 실제 토크나이저와 "
-        "채팅 템플릿으로 센 값이다. 처리 속도는 가정값이라 시간은 추정이다.",
+        "채팅 템플릿으로 센 값이다. 처리 속도는 가정값이라 시간은 추정이다. "
+        f"속도 가정은 {ASSUMED_GPU} 기준이며, T4처럼 bf16이 없는 GPU(fp16 경로)에는 맞지 않는다.",
         "",
         f"설정: fold {s['folds']} × 시드 {s['seeds']}, epoch {s['epochs']}, 행당 학습 예제 {s['examples_per_row']}",
         "",

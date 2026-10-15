@@ -62,7 +62,9 @@ def pair_agreement(a: Sequence[float], b: Sequence[float]) -> dict:
 
 def judge_vs_annotators(pred: Sequence[int | None], s1, s2) -> dict:
     """판정을 각 평가자와 따로 비교해 평균한다. 사람 간 일치(score1 대 score2)와 같은 척도.
-    형식 실패는 오답으로 센다."""
+    완전 일치·1점 이내는 형식 실패를 오답으로 세고, 피어슨은 형식 실패 행을 뺀다.
+    평균 점수와의 피어슨은 평균에 평가자 자신의 점수가 들어가 있어 사람 간 피어슨과 비교할 수 없다.
+    """
     p = _pred(pred)
     out = {}
     for key, ok_fn in (("exact", lambda d: d == 0), ("within_1", lambda d: d <= 1)):
@@ -70,6 +72,8 @@ def judge_vs_annotators(pred: Sequence[int | None], s1, s2) -> dict:
             float(np.where(np.isnan(p), False, ok_fn(np.abs(p - _arr(s)))).mean()) for s in (s1, s2)
         ]
         out[key] = float(np.mean(vals))
+    rs = [pearson(list(pred), list(_arr(s))) for s in (s1, s2)]
+    out["pearson"] = float(np.mean(rs)) if all(r is not None for r in rs) else None
     return out
 
 

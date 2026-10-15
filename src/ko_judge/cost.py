@@ -133,6 +133,8 @@ def main() -> None:
     header = (
         "# 결과\n\n`make report`가 reports/metrics·reports/throughput에서 생성한다. "
         "손으로 고치지 않는다.\n\n"
+        "판정 지표는 모두 정수 판정 기준이다(제로샷은 `[RESULT]` 정수, LoRA는 점수 분포의 argmax). "
+        "LoRA의 기댓값(연속 점수) 지표는 reports/metrics/*.json의 `expected`에 따로 있다.\n\n"
     )
     Path(args.out).write_text(header + table, encoding="utf-8")
     print(table)
