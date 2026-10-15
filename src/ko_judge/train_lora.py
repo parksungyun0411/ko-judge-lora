@@ -19,6 +19,13 @@ from ko_judge.prompts import sft_records
 from ko_judge.splits import make_plan
 
 
+def model_dtype(tr) -> str:
+    """기반 가중치 dtype. fp16 학습에서도 LoRA 어댑터는 PEFT가 fp32로 올린다."""
+    if tr.bf16:
+        return "bfloat16"
+    return "float16" if tr.fp16 else "float32"
+
+
 def adapter_dir(cfg, fold: int, seed: int) -> Path:
     return Path(cfg.output_dir) / f"fold{fold}_seed{seed}"
 
@@ -48,12 +55,13 @@ def make_trainer(cfg, model_id: str, revision: str | None, train_ds, out_dir, se
         max_length=tr.max_length,
         gradient_checkpointing=tr.gradient_checkpointing,
         bf16=tr.bf16,
+        fp16=tr.fp16,
         logging_steps=tr.logging_steps,
         eval_strategy="no",
         save_strategy="no",
         completion_only_loss=True,
         report_to="none",
-        model_init_kwargs={"revision": revision, "dtype": "bfloat16" if tr.bf16 else "float32"},
+        model_init_kwargs={"revision": revision, "dtype": model_dtype(tr)},
         **overrides,
     )
     peft_config = LoraConfig(

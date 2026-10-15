@@ -61,6 +61,8 @@ class TrainSection:
     max_length: int = 8192
     gradient_checkpointing: bool = True
     bf16: bool = True
+    # T4처럼 bf16이 없는 GPU용. bf16과 함께 켤 수 없다
+    fp16: bool = False
     logging_steps: int = 10
 
 
@@ -97,6 +99,8 @@ def validate(cfg: TrainConfig, models: dict[str, ModelSpec]) -> None:
         raise ConfigError("epochs·batch·grad_accum은 양수")
     if not 0 <= tr.warmup_ratio < 1:
         raise ConfigError("train.warmup_ratio는 [0, 1)")
+    if tr.bf16 and tr.fp16:
+        raise ConfigError("train.bf16과 train.fp16은 함께 켤 수 없다")
     need = models[cfg.model].max_prompt_tokens + ANSWER_TOKEN_MARGIN
     if tr.max_length < need:
         # TRL은 max_length를 넘는 예제를 뒤에서 자른다. 정답 숫자가 잘리면 그 예제는 손실이 0이 되어

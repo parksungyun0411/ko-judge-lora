@@ -17,6 +17,13 @@ import httpx
 from ko_judge.parsing import SCORES, extract_result, score_distribution
 
 
+def auto_dtype(torch, device: str):
+    """bf16을 지원하는 GPU는 bf16, T4 같은 GPU는 fp16, CPU는 fp32."""
+    if device != "cuda":
+        return torch.float32
+    return torch.bfloat16 if torch.cuda.is_bf16_supported() else torch.float16
+
+
 class OpenAIBackend:
     def __init__(self, base_url: str, model: str, concurrency: int = 32, timeout: float = 300.0):
         self.url = base_url.rstrip("/") + "/chat/completions"
@@ -92,7 +99,7 @@ class HFBackend:
         self.torch = torch
         self.tok = AutoTokenizer.from_pretrained(model_path, revision=revision)
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        dtype = torch.bfloat16 if device == "cuda" else torch.float32
+        dtype = auto_dtype(torch, device)
         model = AutoModelForCausalLM.from_pretrained(model_path, revision=revision, dtype=dtype)
         if adapter:
             from peft import PeftModel
