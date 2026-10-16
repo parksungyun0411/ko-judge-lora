@@ -14,6 +14,11 @@ SEED     ?= 0
 GPU_NAME ?=
 GPU_USD_PER_HOUR ?=
 CONCURRENCY ?= 32
+# bf16이 없는 GPU(T4)용: CONFIG=configs/t4/lora_$(MODEL).yaml VLLM_ARGS="--dtype float16" MERGE_DTYPE=float16 PREC=fp16
+CONFIG   ?= configs/lora_$(MODEL).yaml
+VLLM_ARGS ?=
+MERGE_DTYPE ?= bfloat16
+PREC     ?= bf16
 
 HF_ID    = $(shell $(PY) -m ko_judge.config $(MODEL) hf_id)
 REVISION = $(shell $(PY) -m ko_judge.config $(MODEL) revision)
@@ -55,30 +60,30 @@ setup-gpu: ## GPU 서버 환경 (.venv-train, .venv-serve) + 데이터
 	bash scripts/runpod_bootstrap.sh
 
 zeroshot: ## 기반 모델 생성형 제로샷, 2,506행 전체 (MODEL=키)
-	scripts/with_vllm.sh $(HF_ID) $(MODEL) --revision $(REVISION) -- bash -c '\
+	scripts/with_vllm.sh $(HF_ID) $(MODEL) --revision $(REVISION) $(VLLM_ARGS) -- bash -c '\
 	  $(SERVE_PY) -m ko_judge.predict --mode judge --served $(MODEL) --fold all --tag zeroshot_$(MODEL) && \
 	  $(SERVE_PY) -m ko_judge.evaluate run --tag zeroshot_$(MODEL)'
 
 train: ## LoRA fold 하나 (MODEL FOLD SEED)
-	$(TRAIN_PY) -m ko_judge.train_lora --config configs/lora_$(MODEL).yaml --fold $(FOLD) --seed $(SEED)
+	$(TRAIN_PY) -m ko_judge.train_lora --config $(CONFIG) --fold $(FOLD) --seed $(SEED)
 
 train-all: ## LoRA 전체: FOLDS × SEEDS
 	for s in $(SEEDS); do for f in $(FOLDS); do \
-	  $(TRAIN_PY) -m ko_judge.train_lora --config configs/lora_$(MODEL).yaml --fold $$f --seed $$s || exit 1; \
+	  $(TRAIN_PY) -m ko_judge.train_lora --config $(CONFIG) --fold $$f --seed $$s || exit 1; \
 	done; done
 
 eval-lora: ## 기반 모델 + 어댑터 전부를 한 서버로 → 시드별 지표 + 시드 묶음
-	scripts/with_vllm.sh $(HF_ID) $(MODEL) --revision $(REVISION) --enable-lora --max-lora-rank 16 \
+	scripts/with_vllm.sh $(HF_ID) $(MODEL) --revision $(REVISION) $(VLLM_ARGS) --enable-lora --max-lora-rank 16 \
 	  --max-loras 4 --lora-modules $(LORA_MODULES) -- bash -c '\
 	  for s in $(SEEDS); do for f in $(FOLDS); do \
 	    $(SERVE_PY) -m ko_judge.predict --mode score --served $(MODEL)-f$$f-s$$s --fold $$f \
-	      --tag lora_$(MODEL)_bf16_s$$s || exit 1; \
-	  done; $(SERVE_PY) -m ko_judge.evaluate run --tag lora_$(MODEL)_bf16_s$$s || exit 1; done'
-	$(PY) -m ko_judge.evaluate seeds --group lora_$(MODEL)_bf16 \
-	  --tags $(foreach s,$(SEEDS),lora_$(MODEL)_bf16_s$(s))
+	      --tag lora_$(MODEL)_$(PREC)_s$$s || exit 1; \
+	  done; $(SERVE_PY) -m ko_judge.evaluate run --tag lora_$(MODEL)_$(PREC)_s$$s || exit 1; done'
+	$(PY) -m ko_judge.evaluate seeds --group lora_$(MODEL)_$(PREC) \
+	  --tags $(foreach s,$(SEEDS),lora_$(MODEL)_$(PREC)_s$(s))
 
 eval-seeds-fold0: ## 축소안: fold 0 시드별 어댑터로 학습 시드 변동 (SEEDS=0 1 2)
-	scripts/with_vllm.sh $(HF_ID) $(MODEL) --revision $(REVISION) --enable-lora --max-lora-rank 16 \
+	scripts/with_vllm.sh $(HF_ID) $(MODEL) --revision $(REVISION) $(VLLM_ARGS) --enable-lora --max-lora-rank 16 \
 	  --max-loras 4 --lora-modules $(foreach s,$(SEEDS),$(MODEL)-f0-s$(s)=$(LORA_DIR)/fold0_seed$(s)) \
 	  -- bash -c 'for s in $(SEEDS); do \
 	    $(SERVE_PY) -m ko_judge.predict --mode score --served $(MODEL)-f0-s$$s --fold 0 \
@@ -90,14 +95,14 @@ eval-seeds-fold0: ## 축소안: fold 0 시드별 어댑터로 학습 시드 변�
 merge-quant: ## 시드 0의 fold별 어댑터 병합 → AWQ 4bit
 	for f in $(FOLDS); do \
 	  $(TRAIN_PY) -m ko_judge.merge --model $(MODEL) --adapter $(LORA_DIR)/fold$${f}_seed0 \
-	    --out outputs/merged/$(MODEL)/fold$${f}_seed0 || exit 1; \
+	    --out outputs/merged/$(MODEL)/fold$${f}_seed0 --dtype $(MERGE_DTYPE) || exit 1; \
 	  $(TRAIN_PY) -m ko_judge.quantize --model-dir outputs/merged/$(MODEL)/fold$${f}_seed0 \
 	    --out outputs/awq/$(MODEL)/fold$${f}_seed0 --fold $$f || exit 1; \
 	done
 
 eval-merged: ## 병합 bf16을 fold별로 서빙해 판정, fold 0에서 부하 측정
 	for f in $(FOLDS); do \
-	  scripts/with_vllm.sh outputs/merged/$(MODEL)/fold$${f}_seed0 $(MODEL)-merged-f$$f -- bash -c "\
+	  scripts/with_vllm.sh outputs/merged/$(MODEL)/fold$${f}_seed0 $(MODEL)-merged-f$$f $(VLLM_ARGS) -- bash -c "\
 	    $(SERVE_PY) -m ko_judge.predict --mode score --served $(MODEL)-merged-f$$f --fold $$f \
 	      --tag lora_$(MODEL)_merged_s0 && \
 	    if [ $$f = 0 ]; then $(SERVE_PY) -m ko_judge.loadtest --served $(MODEL)-merged-f0 \
@@ -107,7 +112,7 @@ eval-merged: ## 병합 bf16을 fold별로 서빙해 판정, fold 0에서 부하 
 
 eval-awq: ## AWQ 4bit를 fold별로 서빙해 판정, fold 0에서 부하 측정
 	for f in $(FOLDS); do \
-	  scripts/with_vllm.sh outputs/awq/$(MODEL)/fold$${f}_seed0 $(MODEL)-awq-f$$f -- bash -c "\
+	  scripts/with_vllm.sh outputs/awq/$(MODEL)/fold$${f}_seed0 $(MODEL)-awq-f$$f $(VLLM_ARGS) -- bash -c "\
 	    $(SERVE_PY) -m ko_judge.predict --mode score --served $(MODEL)-awq-f$$f --fold $$f \
 	      --tag lora_$(MODEL)_awq_s0 && \
 	    if [ $$f = 0 ]; then $(SERVE_PY) -m ko_judge.loadtest --served $(MODEL)-awq-f0 \

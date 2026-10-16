@@ -5,7 +5,7 @@ import yaml
 
 from ko_judge.config import MODELS_YAML, ConfigError, load_models, load_train_config
 
-CONFIGS = sorted((Path(__file__).parents[1] / "configs").glob("lora_*.yaml"))
+CONFIGS = sorted((Path(__file__).parents[1] / "configs").rglob("lora_*.yaml"))
 
 
 def test_models_and_licences():
@@ -14,7 +14,7 @@ def test_models_and_licences():
     assert {m.license for m in models.values()} == {"apache-2.0"}
 
 
-@pytest.mark.parametrize("path", CONFIGS, ids=lambda p: p.name)
+@pytest.mark.parametrize("path", CONFIGS, ids=lambda p: "/".join(p.parts[-2:]))
 def test_shipped_configs_validate(path):
     cfg = load_train_config(path)
     assert path.stem == f"lora_{cfg.model}"

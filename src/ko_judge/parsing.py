@@ -13,6 +13,9 @@ import re
 
 _RESULT = re.compile(r"\[RESULT\]\s*(\d)")
 SCORES = (1, 2, 3, 4, 5)
+# ASCII 숫자만 점수 토큰으로 본다. str.isdigit()는 '①'·'²'도 참이라
+# int()에서 멈췄다(2026-10-16 T4 점검)
+_SCORE_TOKENS = {str(s): s for s in SCORES}
 
 
 def extract_result(text: str | None) -> int | None:
@@ -29,9 +32,9 @@ def score_distribution(top_logprobs: dict[str, float]) -> dict[int, float] | Non
     """{토큰: logprob} → {점수: 확률}. 점수 토큰이 하나도 없으면 None."""
     probs: dict[int, float] = {}
     for tok, lp in top_logprobs.items():
-        t = tok.strip()
-        if t.isdigit() and int(t) in SCORES:
-            probs[int(t)] = probs.get(int(t), 0.0) + math.exp(lp)
+        s = _SCORE_TOKENS.get(tok.strip())
+        if s is not None:
+            probs[s] = probs.get(s, 0.0) + math.exp(lp)
     total = sum(probs.values())
     if total <= 0:
         return None

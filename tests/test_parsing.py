@@ -32,6 +32,13 @@ def test_score_distribution_merges_variants_and_ignores_other_tokens():
     assert score_distribution({"A": 0.0}) is None
 
 
+def test_score_distribution_ignores_non_ascii_digits():
+    # '①'·'²'는 str.isdigit()가 참이지만 int()가 실패한다. '٣'(아랍 숫자)은 int()가 3으로 읽는다.
+    top = {"①": math.log(0.3), "²": math.log(0.1), "٣": math.log(0.1), "2": math.log(0.5)}
+    assert score_distribution(top) == {1: 0.0, 2: 1.0, 3: 0.0, 4: 0.0, 5: 0.0}
+    assert score_distribution({"①": 0.0, "10": 0.0}) is None
+
+
 def test_argmax_and_expected():
     d = {1: 0.1, 2: 0.2, 3: 0.3, 4: 0.3, 5: 0.1}
     assert argmax_score(d) == 3  # 동률이면 낮은 점수
