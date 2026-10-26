@@ -1,0 +1,14 @@
+{
+  "completed": 1000,
+  "errors": 0,
+  "wall_s": 1406.085489009,
+  "items_per_s": 0.7111943105997016,
+  "latency_p50_s": 44.46653322500015,
+  "latency_p95_s": 54.14299099699974,
+  "latency_p99_s": 56.31463650000023,
+  "tag": "lora_kanana-1.5-2.1b_awq",
+  "served": "kanana-1.5-2.1b-awq-f0",
+  "concurrency": 32,
+  "gpu": "Tesla T4",
+  "measured_at": "2026-10-26T01:37:57+0000"
+}

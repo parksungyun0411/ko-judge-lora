@@ -3,6 +3,7 @@
   $/100만 건 = GPU $/h ÷ (건/s × 3600) × 1,000,000
 
 측정 파일이 없는 칸은 '측정 전'으로 둔다. 숫자를 지어내지 않는다.
+report.yaml의 행에 `not_run: 사유`가 있으면 그 행은 '측정 안 함'으로 두고 사유를 표 아래에 적는다.
 
   python -m ko_judge.cost --gpu-usd-per-hour 0.69 --gpu-name "RTX 4090"
 """
@@ -15,6 +16,7 @@ from pathlib import Path
 import yaml
 
 PENDING = "측정 전"
+NOT_RUN = "측정 안 함"
 SECONDS_PER_HOUR = 3600
 
 
@@ -65,6 +67,9 @@ def metric_value(m: dict | None, path: tuple[str, ...], spec: str) -> str:
 def build_rows(report_cfg: dict, reports_dir: Path, gpu_usd_per_hour: float | None) -> list[dict]:
     rows = []
     for r in report_cfg["rows"]:
+        if r.get("not_run"):
+            rows.append({"name": r["name"], "not_run": r["not_run"]})
+            continue
         m = _load(reports_dir / "metrics" / f"{r['metrics']}.json") if r.get("metrics") else None
         t = (
             _load(reports_dir / "throughput" / f"{r['throughput']}.json")
@@ -89,16 +94,21 @@ def build_rows(report_cfg: dict, reports_dir: Path, gpu_usd_per_hour: float | No
     return rows
 
 
-def render_markdown(rows: list[dict], gpu_usd_per_hour: float | None, gpu_name: str) -> str:
+def render_markdown(
+    rows: list[dict], gpu_usd_per_hour: float | None, gpu_name: str, price_note: str = ""
+) -> str:
     rate = f"${gpu_usd_per_hour}/h" if gpu_usd_per_hour is not None else PENDING
     head = ["구성", *(c[0] for c in COLUMNS), "건/s", "p95 (ms)", "$/100만 건"]
-    lines = [
-        f"GPU: {gpu_name or PENDING} · 요금 {rate}",
-        "",
-        "| " + " | ".join(head) + " |",
-        "|---|" + "---:|" * (len(head) - 1),
-    ]
+    lines = [f"GPU: {gpu_name or PENDING} · 요금 {rate}", ""]
+    if price_note:
+        lines += [f"요금 근거: {price_note}", ""]
+    lines += ["| " + " | ".join(head) + " |", "|---|" + "---:|" * (len(head) - 1)]
+    reasons: dict[str, list[str]] = {}  # 사유 → 행 이름. 같은 사유는 한 줄로 묶는다
     for r in rows:
+        if "not_run" in r:
+            reasons.setdefault(r["not_run"], []).append(r["name"])
+            lines.append("| " + " | ".join([r["name"]] + [NOT_RUN] * (len(head) - 1)) + " |")
+            continue
         tp = r["has_throughput_row"]
         lines.append(
             "| "
@@ -113,6 +123,9 @@ def render_markdown(rows: list[dict], gpu_usd_per_hour: float | None, gpu_name: 
             )
             + " |"
         )
+    if reasons:
+        lines += ["", f"{NOT_RUN} 사유:", ""]
+        lines += [f"- {', '.join(names)}: {reason}" for reason, names in reasons.items()]
     return "\n".join(lines) + "\n"
 
 
@@ -122,6 +135,7 @@ def main() -> None:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--gpu-usd-per-hour", type=float, default=None)
     p.add_argument("--gpu-name", default="")
+    p.add_argument("--price-note", default="", help="요금 출처 (예: Colab 종량제 단가 × T4 소비율)")
     p.add_argument("--config", default="configs/report.yaml")
     p.add_argument("--reports-dir", default="reports")
     p.add_argument("--out", default="reports/RESULTS.md")
@@ -129,7 +143,7 @@ def main() -> None:
 
     cfg = yaml.safe_load(Path(args.config).read_text(encoding="utf-8"))
     rows = build_rows(cfg, Path(args.reports_dir), args.gpu_usd_per_hour)
-    table = render_markdown(rows, args.gpu_usd_per_hour, args.gpu_name)
+    table = render_markdown(rows, args.gpu_usd_per_hour, args.gpu_name, args.price_note)
     header = (
         "# 결과\n\n`make report`가 reports/metrics·reports/throughput에서 생성한다. "
         "손으로 고치지 않는다.\n\n"

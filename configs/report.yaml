@@ -1,21 +1,26 @@
 # 결과 표의 행. reports/metrics/{metrics}.json(시드 묶음 또는 단일 실행), reports/throughput/{throughput}.json.
-# 파일이 없으면 그 칸은 '측정 전'.
+# 파일이 없으면 그 칸은 '측정 전'으로 남고, not_run: 사유가 있으면 '측정 안 함'과 사유가 나온다.
+# T4에는 bf16이 없어 kanana는 fp16으로 학습·서빙했다(docs/kaggle_t4.md).
 rows:
   - name: Qwen3-4B 제로샷 (생성형, 논문 프롬프트)
     metrics: zeroshot_qwen3-4b
-  - name: Qwen3-4B LoRA bf16 (시드 3, 어댑터 서빙)
+    not_run: &qwen3_reason 무료 T4(Kaggle, 주 30시간) 안에서 kanana-1.5-2.1b만 돌렸다. kanana도 fold 하나 학습에 T4 1장으로 2시간 반~3시간이 걸려, 약 2배 크기인 Qwen3-4B까지 fold 5 × 시드 3을 돌릴 시간이 없었다
+  - name: Qwen3-4B LoRA (시드 3, 어댑터 서빙)
     metrics: lora_qwen3-4b_bf16
-  - name: Qwen3-4B LoRA 병합 bf16 (시드 0)
+    not_run: *qwen3_reason
+  - name: Qwen3-4B LoRA 병합 (시드 0)
     metrics: lora_qwen3-4b_merged_s0
     throughput: lora_qwen3-4b_merged
+    not_run: *qwen3_reason
   - name: Qwen3-4B LoRA AWQ 4bit (시드 0)
     metrics: lora_qwen3-4b_awq_s0
     throughput: lora_qwen3-4b_awq
+    not_run: *qwen3_reason
   - name: kanana-1.5-2.1b 제로샷 (생성형, 논문 프롬프트)
     metrics: zeroshot_kanana-1.5-2.1b
-  - name: kanana-1.5-2.1b LoRA bf16 (시드 3, 어댑터 서빙)
-    metrics: lora_kanana-1.5-2.1b_bf16
-  - name: kanana-1.5-2.1b LoRA 병합 bf16 (시드 0)
+  - name: kanana-1.5-2.1b LoRA fp16 (시드 3, 어댑터 서빙)
+    metrics: lora_kanana-1.5-2.1b_fp16
+  - name: kanana-1.5-2.1b LoRA 병합 fp16 (시드 0)
     metrics: lora_kanana-1.5-2.1b_merged_s0
     throughput: lora_kanana-1.5-2.1b_merged
   - name: kanana-1.5-2.1b LoRA AWQ 4bit (시드 0)

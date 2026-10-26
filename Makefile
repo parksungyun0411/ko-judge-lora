@@ -13,11 +13,14 @@ FOLD     ?= 0
 SEED     ?= 0
 GPU_NAME ?=
 GPU_USD_PER_HOUR ?=
+PRICE_NOTE ?=
 CONCURRENCY ?= 32
 # bf16이 없는 GPU(T4)용: CONFIG=configs/t4/lora_$(MODEL).yaml VLLM_ARGS="--dtype float16" MERGE_DTYPE=float16 PREC=fp16
+#   QUANT_ARGS="--num-samples 32" (보정 샘플 256개·64개는 T4 15GB를 넘었다, docs/kaggle_t4.md)
 CONFIG   ?= configs/lora_$(MODEL).yaml
 VLLM_ARGS ?=
 MERGE_DTYPE ?= bfloat16
+QUANT_ARGS ?=
 PREC     ?= bf16
 
 HF_ID    = $(shell $(PY) -m ko_judge.config $(MODEL) hf_id)
@@ -97,7 +100,7 @@ merge-quant: ## 시드 0의 fold별 어댑터 병합 → AWQ 4bit
 	  $(TRAIN_PY) -m ko_judge.merge --model $(MODEL) --adapter $(LORA_DIR)/fold$${f}_seed0 \
 	    --out outputs/merged/$(MODEL)/fold$${f}_seed0 --dtype $(MERGE_DTYPE) || exit 1; \
 	  $(TRAIN_PY) -m ko_judge.quantize --model-dir outputs/merged/$(MODEL)/fold$${f}_seed0 \
-	    --out outputs/awq/$(MODEL)/fold$${f}_seed0 --fold $$f || exit 1; \
+	    --out outputs/awq/$(MODEL)/fold$${f}_seed0 --fold $$f $(QUANT_ARGS) || exit 1; \
 	done
 
 eval-merged: ## 병합 bf16을 fold별로 서빙해 판정, fold 0에서 부하 측정
@@ -120,6 +123,6 @@ eval-awq: ## AWQ 4bit를 fold별로 서빙해 판정, fold 0에서 부하 측정
 	done
 	$(PY) -m ko_judge.evaluate run --tag lora_$(MODEL)_awq_s0
 
-report: ## reports/RESULTS.md 생성 (GPU_USD_PER_HOUR=값 GPU_NAME=이름)
-	$(PY) -m ko_judge.cost --gpu-name "$(GPU_NAME)" \
+report: ## reports/RESULTS.md 생성 (GPU_USD_PER_HOUR=값 GPU_NAME=이름 PRICE_NOTE=요금 근거)
+	$(PY) -m ko_judge.cost --gpu-name "$(GPU_NAME)" --price-note "$(PRICE_NOTE)" \
 	  $(if $(GPU_USD_PER_HOUR),--gpu-usd-per-hour $(GPU_USD_PER_HOUR),)

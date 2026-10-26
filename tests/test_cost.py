@@ -42,3 +42,16 @@ def test_single_and_seed_files(tmp_path):
     assert "| A | 0.5000 | 0.250 | 0.800 | 측정 전 | 0.100 | 2.00 | 1500 | 100.00 |" in md
     assert "| B | 0.5000 (0.4000~0.6000, n=3) | 측정 전 |" in md
     assert metric_value(None, ("x",), ".2f") == PENDING
+
+
+def test_not_run_rows_show_reason(tmp_path):
+    cfg = {
+        "rows": [
+            {"name": "C LoRA", "metrics": "c", "not_run": "T4 할당 한도"},
+            {"name": "C AWQ", "metrics": "d", "not_run": "T4 할당 한도"},
+        ]
+    }
+    md = render_markdown(build_rows(cfg, tmp_path, 0.1), 0.1, "T4", price_note="출처 X")
+    assert "| C LoRA |" + " 측정 안 함 |" * 8 in md
+    assert md.count("T4 할당 한도") == 1 and "- C LoRA, C AWQ: T4 할당 한도" in md
+    assert "요금 근거: 출처 X" in md

@@ -1,0 +1,14 @@
+{
+  "completed": 1000,
+  "errors": 0,
+  "wall_s": 1367.048710445,
+  "items_per_s": 0.7315028296793324,
+  "latency_p50_s": 43.08289198900002,
+  "latency_p95_s": 52.71722892600019,
+  "latency_p99_s": 55.0380643110002,
+  "tag": "lora_kanana-1.5-2.1b_merged",
+  "served": "kanana-1.5-2.1b-merged-f0",
+  "concurrency": 32,
+  "gpu": "Tesla T4",
+  "measured_at": "2026-10-23T01:29:49+0000"
+}
