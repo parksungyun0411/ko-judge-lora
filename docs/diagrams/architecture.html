@@ -31,7 +31,7 @@
 </head>
 <body>
 <div class="wrap">
-  <h1><b>ko-judge-lora</b> · 한국어 LLM 평가자 LoRA — 데이터에서 비용까지</h1>
+  <h1><b>ko-judge-lora</b> · 한국어 LLM 평가자 LoRA · 데이터에서 비용까지</h1>
 
   <div class="row">
     <div class="tag"><div class="en">DATA</div><div class="ko">데이터</div></div>
@@ -58,11 +58,11 @@
   <div class="row">
     <div class="tag"><div class="en">TRAIN</div><div class="ko">학습</div></div>
     <div class="lane">
-      <div class="box green"><div class="t">Qwen3-4B · kanana-1.5-2.1b</div><div class="s">Apache-2.0, 커밋 고정</div></div>
+      <div class="box green"><div class="t">kanana-1.5-2.1b</div><div class="s">Apache-2.0, 커밋 고정, T4 fp16<br>Qwen3-4B는 계획만 (실행 안 함)</div></div>
       <div class="arrow">→</div>
       <div class="box green"><div class="t">LoRA (PEFT + TRL)</div><div class="s">정답 = 평가자 점수 숫자 1개<br>fold 5 × 시드 3</div></div>
       <div class="arrow">→</div>
-      <div class="box green"><div class="t">병합 → AWQ 4bit</div><div class="s">llm-compressor W4A16<br>보정 데이터는 train fold에서만</div></div>
+      <div class="box green"><div class="t">병합 → AWQ 4bit</div><div class="s">llm-compressor W4A16, 시드 0<br>보정 32개, train fold에서만</div></div>
     </div>
   </div>
   <div class="down">▼</div>
@@ -71,8 +71,8 @@
     <div class="tag"><div class="en">SERVE</div><div class="ko">서빙</div></div>
     <div class="lane">
       <div class="box blue"><div class="t">vLLM 제로샷</div><div class="s">논문 프롬프트, 피드백 후 [RESULT]</div></div>
-      <div class="box blue"><div class="t">vLLM 어댑터 서빙</div><div class="s">기반 모델 1개 + 어댑터 15개</div></div>
-      <div class="box blue"><div class="t">병합 bf16 / AWQ</div><div class="s">점수 토큰 logprob → 분포<br>부하 측정 (건/s, p95)</div></div>
+      <div class="box blue"><div class="t">vLLM 어댑터 서빙</div><div class="s">기반 모델 + fold별 어댑터<br>시드 3 × fold 5</div></div>
+      <div class="box blue"><div class="t">병합 fp16 / AWQ</div><div class="s">점수 토큰 logprob → 분포<br>부하 측정 (건/s, p95)</div></div>
     </div>
   </div>
   <div class="down">▼</div>
@@ -86,7 +86,7 @@
     </div>
   </div>
 
-  <div class="note">수치는 모두 reports/에서 읽는다. 모델 실행 결과는 아직 없다(측정 전).</div>
+  <div class="note">Kaggle T4 두 장에서 측정(2026-10-16~26). 판정 지표는 reports/metrics, 비교 수치는 reports/run_checks.json에서 읽는다.</div>
 </div>
 </body>
 </html>

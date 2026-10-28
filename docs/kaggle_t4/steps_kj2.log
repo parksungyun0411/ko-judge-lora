@@ -1,0 +1,52 @@
+2026-10-23T00:51:01Z SETUP_DONE rev=7df4bc35ccd610e451809d7106e1c3cf82bfd44c sha=a2b5d90 seed=1
+2026-10-23T00:51:01Z [gpu0] START train_f0
+2026-10-23T00:51:01Z [gpu1] START merge_f0
+2026-10-23T00:51:58Z [gpu1] OK merge_f0
+2026-10-23T00:51:58Z [gpu1] START score_merged_f0
+2026-10-23T01:29:50Z [gpu1] OK score_merged_f0
+2026-10-23T01:29:50Z [gpu1] START quantize_f0
+2026-10-23T01:30:20Z [gpu1] FAILED quantize_f0 rc=1
+2026-10-23T01:30:21Z [gpu1] START merge_f1
+2026-10-23T01:31:09Z [gpu1] OK merge_f1
+2026-10-23T01:31:09Z [gpu1] START score_merged_f1
+2026-10-23T01:44:44Z [gpu1] OK score_merged_f1
+2026-10-23T01:44:44Z [gpu1] START quantize_f1
+2026-10-23T01:45:15Z [gpu1] FAILED quantize_f1 rc=1
+2026-10-23T01:45:15Z [gpu1] START train_f1
+2026-10-23T03:28:29Z [gpu0] OK train_f0
+2026-10-23T03:28:34Z [gpu0] START score_f0
+2026-10-23T03:47:24Z [gpu0] OK score_f0
+2026-10-23T03:47:24Z [gpu0] START eval_f0
+2026-10-23T03:48:24Z [gpu0] OK eval_f0
+2026-10-23T03:48:24Z [gpu0] START train_f2
+2026-10-23T04:30:36Z [gpu1] OK train_f1
+2026-10-23T04:30:41Z [gpu1] START score_f1
+2026-10-23T04:51:46Z [gpu1] OK score_f1
+2026-10-23T04:51:46Z [gpu1] START eval_f1
+2026-10-23T04:52:44Z [gpu1] OK eval_f1
+2026-10-23T04:52:44Z [gpu1] START train_f3
+2026-10-23T06:24:56Z [gpu0] OK train_f2
+2026-10-23T06:25:02Z [gpu0] START score_f2
+2026-10-23T06:41:54Z [gpu0] OK score_f2
+2026-10-23T06:41:54Z [gpu0] START eval_f2
+2026-10-23T06:42:53Z [gpu0] OK eval_f2
+2026-10-23T06:42:53Z [gpu0] START train_f4
+2026-10-23T07:43:42Z [gpu1] OK train_f3
+2026-10-23T07:43:48Z [gpu1] START score_f3
+2026-10-23T08:00:50Z [gpu1] OK score_f3
+2026-10-23T08:00:50Z [gpu1] START eval_f3
+2026-10-23T08:02:01Z [gpu1] OK eval_f3
+2026-10-23T09:19:57Z [gpu0] OK train_f4
+2026-10-23T09:20:03Z [gpu0] START score_f4
+2026-10-23T09:38:56Z [gpu0] OK score_f4
+2026-10-23T09:38:56Z [gpu0] START eval_f4
+2026-10-23T09:40:11Z [gpu0] OK eval_f4
+2026-10-23T09:40:11Z [gpuc] START eval_seed_all
+2026-10-23T09:41:29Z [gpuc] OK eval_seed_all
+1.8M	/kaggle/working/out
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold0_seed1.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold1_seed1.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold2_seed1.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold3_seed1.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold4_seed1.tgz
+2026-10-23T09:41:29Z ALL_DONE

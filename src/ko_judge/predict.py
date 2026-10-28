@@ -87,17 +87,17 @@ def run_fold(backend, mode: str, pw, fi, plan, fold: int, seed: int) -> list[dic
 def main() -> None:
     import argparse
 
+    from ko_judge.generation import OpenAIBackend, default_base_url
+
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--mode", choices=["judge", "score"], required=True)
     p.add_argument("--served", required=True, help="vLLM 서빙 이름(어댑터 이름 포함)")
-    p.add_argument("--base-url", default="http://localhost:8000/v1")
+    p.add_argument("--base-url", default=default_base_url())
     p.add_argument("--fold", required=True, help="0~4 또는 all")
     p.add_argument("--seed", type=int, default=0)
     p.add_argument("--tag", required=True)
     p.add_argument("--concurrency", type=int, default=32)
     args = p.parse_args()
-
-    from ko_judge.generation import OpenAIBackend
 
     pw = kd.load_pointwise()
     plan = make_plan(pw)

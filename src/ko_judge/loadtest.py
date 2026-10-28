@@ -17,7 +17,7 @@ from pathlib import Path
 import httpx
 
 from ko_judge.data import load_pointwise
-from ko_judge.generation import OpenAIBackend
+from ko_judge.generation import OpenAIBackend, default_base_url
 from ko_judge.prompts import score_only_messages
 
 
@@ -75,7 +75,7 @@ def main() -> None:
     import argparse
 
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--base-url", default="http://localhost:8000/v1")
+    p.add_argument("--base-url", default=default_base_url())
     p.add_argument("--served", required=True)
     p.add_argument("--tag", required=True)
     p.add_argument("--n", type=int, default=1000, help="측정 건수 (warmup 제외)")

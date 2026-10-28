@@ -13,8 +13,13 @@ __pycache__/
 data/
 *.csv
 
-# 학습·서빙 산출물 (가중치, 예측 원문, 로그)
-outputs/
+# 학습·서빙 산출물 (가중치, 로그). 예측(점수·점수 분포만, 응답 본문 없음)과
+# 학습 요약(train_summary.json)은 결과 수치의 근거라 넣는다
+outputs/*
+!outputs/predictions/
+!outputs/lora/
+outputs/lora/*/*/*
+!outputs/lora/*/*/train_summary.json
 runs/
 wandb/
 *.safetensors

@@ -1,0 +1,45 @@
+2026-10-26T00:41:29Z SETUP_DONE rev=7df4bc35ccd610e451809d7106e1c3cf82bfd44c sha=a2b5d90 seed=0
+2026-10-26T00:41:29Z [gpu0] START merge_f0
+2026-10-26T00:41:29Z [gpu1] START merge_f1
+2026-10-26T00:42:57Z [gpu1] OK merge_f1
+2026-10-26T00:42:57Z [gpu1] START quantize_f1
+2026-10-26T00:42:57Z [gpu0] OK merge_f0
+2026-10-26T00:42:57Z [gpu0] START quantize_f0
+2026-10-26T00:43:23Z [gpu0] FAILED quantize_f0 rc=1
+2026-10-26T00:43:23Z [gpu0] START quantize32_f0
+2026-10-26T00:43:23Z [gpu1] FAILED quantize_f1 rc=1
+2026-10-26T00:43:23Z [gpu1] START quantize32_f1
+2026-10-26T00:58:46Z [gpu0] OK quantize32_f0
+2026-10-26T00:58:46Z [gpu0] START score_awq_f0
+2026-10-26T00:59:35Z [gpu1] OK quantize32_f1
+2026-10-26T00:59:35Z [gpu1] START score_awq_f1
+2026-10-26T01:14:55Z [gpu1] OK score_awq_f1
+2026-10-26T01:14:55Z [gpu1] START merge_f3
+2026-10-26T01:15:40Z [gpu1] OK merge_f3
+2026-10-26T01:15:40Z [gpu1] START quantize_f3
+2026-10-26T01:16:01Z [gpu1] FAILED quantize_f3 rc=1
+2026-10-26T01:16:01Z [gpu1] START quantize32_f3
+2026-10-26T01:33:23Z [gpu1] OK quantize32_f3
+2026-10-26T01:33:23Z [gpu1] START score_awq_f3
+2026-10-26T01:37:58Z [gpu0] OK score_awq_f0
+2026-10-26T01:37:58Z [gpu0] START merge_f2
+2026-10-26T01:38:44Z [gpu0] OK merge_f2
+2026-10-26T01:38:44Z [gpu0] START quantize_f2
+2026-10-26T01:39:05Z [gpu0] FAILED quantize_f2 rc=1
+2026-10-26T01:39:05Z [gpu0] START quantize32_f2
+2026-10-26T01:46:27Z [gpu1] OK score_awq_f3
+2026-10-26T01:54:36Z [gpu0] OK quantize32_f2
+2026-10-26T01:54:36Z [gpu0] START score_awq_f2
+2026-10-26T02:08:28Z [gpu0] OK score_awq_f2
+2026-10-26T02:08:28Z [gpu0] START merge_f4
+2026-10-26T02:09:12Z [gpu0] OK merge_f4
+2026-10-26T02:09:12Z [gpu0] START quantize_f4
+2026-10-26T02:09:33Z [gpu0] FAILED quantize_f4 rc=1
+2026-10-26T02:09:33Z [gpu0] START quantize32_f4
+2026-10-26T02:25:32Z [gpu0] OK quantize32_f4
+2026-10-26T02:25:32Z [gpu0] START score_awq_f4
+2026-10-26T02:40:35Z [gpu0] OK score_awq_f4
+2026-10-26T02:40:35Z [gpuc] START eval_awq
+2026-10-26T02:41:36Z [gpuc] OK eval_awq
+1.2M	/kaggle/working/out
+2026-10-26T02:41:36Z ALL_DONE

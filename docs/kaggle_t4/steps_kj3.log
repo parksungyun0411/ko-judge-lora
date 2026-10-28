@@ -1,0 +1,58 @@
+2026-10-23T02:14:41Z SETUP_DONE rev=7df4bc35ccd610e451809d7106e1c3cf82bfd44c sha=a2b5d90 seed=2
+2026-10-23T02:14:41Z [gpu0] START train_f0
+2026-10-23T02:14:41Z [gpu1] START merge_f2
+2026-10-23T02:15:42Z [gpu1] OK merge_f2
+2026-10-23T02:15:42Z [gpu1] START score_merged_f2
+2026-10-23T02:29:16Z [gpu1] OK score_merged_f2
+2026-10-23T02:29:16Z [gpu1] START quantize_f2
+2026-10-23T02:29:46Z [gpu1] FAILED quantize_f2 rc=1
+2026-10-23T02:29:46Z [gpu1] START merge_f3
+2026-10-23T02:30:40Z [gpu1] OK merge_f3
+2026-10-23T02:30:40Z [gpu1] START score_merged_f3
+2026-10-23T02:41:46Z [gpu1] OK score_merged_f3
+2026-10-23T02:41:46Z [gpu1] START quantize_f3
+2026-10-23T02:42:17Z [gpu1] FAILED quantize_f3 rc=1
+2026-10-23T02:42:17Z [gpu1] START merge_f4
+2026-10-23T02:43:10Z [gpu1] OK merge_f4
+2026-10-23T02:43:10Z [gpu1] START score_merged_f4
+2026-10-23T02:56:38Z [gpu1] OK score_merged_f4
+2026-10-23T02:56:38Z [gpu1] START quantize_f4
+2026-10-23T02:57:07Z [gpu1] FAILED quantize_f4 rc=1
+2026-10-23T02:57:07Z [gpu1] START train_f1
+2026-10-23T05:01:11Z [gpu0] OK train_f0
+2026-10-23T05:01:16Z [gpu0] START score_f0
+2026-10-23T05:20:16Z [gpu0] OK score_f0
+2026-10-23T05:20:16Z [gpu0] START eval_f0
+2026-10-23T05:21:13Z [gpu0] OK eval_f0
+2026-10-23T05:21:13Z [gpu0] START train_f2
+2026-10-23T05:32:04Z [gpu1] OK train_f1
+2026-10-23T05:32:09Z [gpu1] START score_f1
+2026-10-23T05:50:49Z [gpu1] OK score_f1
+2026-10-23T05:50:49Z [gpu1] START eval_f1
+2026-10-23T05:51:47Z [gpu1] OK eval_f1
+2026-10-23T05:51:47Z [gpu1] START train_f3
+2026-10-23T08:04:12Z [gpu0] OK train_f2
+2026-10-23T08:04:18Z [gpu0] START score_f2
+2026-10-23T08:21:30Z [gpu0] OK score_f2
+2026-10-23T08:21:30Z [gpu0] START eval_f2
+2026-10-23T08:22:33Z [gpu0] OK eval_f2
+2026-10-23T08:22:33Z [gpu0] START train_f4
+2026-10-23T08:31:58Z [gpu1] OK train_f3
+2026-10-23T08:32:04Z [gpu1] START score_f3
+2026-10-23T08:48:23Z [gpu1] OK score_f3
+2026-10-23T08:48:23Z [gpu1] START eval_f3
+2026-10-23T08:49:26Z [gpu1] OK eval_f3
+2026-10-23T11:06:59Z [gpu0] OK train_f4
+2026-10-23T11:07:04Z [gpu0] START score_f4
+2026-10-23T11:26:37Z [gpu0] OK score_f4
+2026-10-23T11:26:37Z [gpu0] START eval_f4
+2026-10-23T11:27:35Z [gpu0] OK eval_f4
+2026-10-23T11:27:36Z [gpuc] START eval_seed_all
+2026-10-23T11:28:36Z [gpuc] OK eval_seed_all
+1.9M	/kaggle/working/out
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold0_seed2.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold1_seed2.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold2_seed2.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold3_seed2.tgz
+84M	/kaggle/working/adapter_kanana-1.5-2.1b_fold4_seed2.tgz
+2026-10-23T11:28:36Z ALL_DONE

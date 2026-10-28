@@ -1,0 +1,54 @@
+{
+  "model": "kanana-1.5-2.1b",
+  "hf_id": "kakaocorp/kanana-1.5-2.1b-instruct-2505",
+  "revision": "7df4bc35ccd610e451809d7106e1c3cf82bfd44c",
+  "fold": 2,
+  "seed": 2,
+  "holdout_models": [
+    "42dot_LLM-SFT-1.3B",
+    "KULLM3",
+    "Meta-Llama-3-70B-Instruct",
+    "Qwen1.5-72B-Chat",
+    "Qwen1.5-MoE-A2.7B-Chat",
+    "SOLAR-10.7B-Instruct-v1.0",
+    "Yi-6B-Chat",
+    "gemma-1.1-7b-it"
+  ],
+  "n_train_rows": 1489,
+  "n_train_examples": 1489,
+  "config": {
+    "model": "kanana-1.5-2.1b",
+    "target": "sample",
+    "output_dir": "outputs/lora/kanana-1.5-2.1b",
+    "lora": {
+      "r": 16,
+      "alpha": 32,
+      "dropout": 0.05,
+      "target_modules": "all-linear"
+    },
+    "train": {
+      "epochs": 2,
+      "learning_rate": 0.0001,
+      "per_device_batch_size": 2,
+      "grad_accum": 8,
+      "warmup_ratio": 0.05,
+      "lr_scheduler": "cosine",
+      "max_length": 8192,
+      "gradient_checkpointing": true,
+      "bf16": false,
+      "fp16": true,
+      "logging_steps": 10
+    }
+  },
+  "metrics": {
+    "train_runtime": 9747.5812,
+    "train_samples_per_second": 0.306,
+    "train_steps_per_second": 0.019,
+    "total_flos": 7.278643287622195e+16,
+    "train_loss": 0.6040241604155683,
+    "entropy": 0.43541920943218365,
+    "num_tokens": 5636308.0,
+    "mean_token_accuracy": 0.7982456140350878,
+    "epoch": 2.0
+  }
+}

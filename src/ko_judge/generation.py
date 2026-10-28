@@ -10,11 +10,17 @@
 from __future__ import annotations
 
 import asyncio
+import os
 import time
 
 import httpx
 
 from ko_judge.parsing import SCORES, extract_result, score_distribution
+
+
+def default_base_url() -> str:
+    """scripts/with_vllm.sh와 같은 PORT 환경 변수(없으면 8000)의 서버."""
+    return f"http://localhost:{os.environ.get('PORT', '8000')}/v1"
 
 
 def auto_dtype(torch, device: str):

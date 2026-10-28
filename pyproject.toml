@@ -43,6 +43,8 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# Kaggle 커널 원본: 실행한 그대로 둔다
+extend-exclude = ["docs/kaggle_t4"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP"]

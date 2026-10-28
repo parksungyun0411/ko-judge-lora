@@ -29,7 +29,7 @@ LORA_DIR = outputs/lora/$(MODEL)
 LORA_MODULES = $(foreach s,$(SEEDS),$(foreach f,$(FOLDS),$(MODEL)-f$(f)-s$(s)=$(LORA_DIR)/fold$(f)_seed$(s)))
 
 .PHONY: help setup-dev test lint smoke data profile budget setup-gpu zeroshot train train-all \
-        eval-lora eval-seeds-fold0 merge-quant eval-merged eval-awq report
+        eval-lora eval-seeds-fold0 merge-quant eval-merged eval-awq report checks
 
 help:
 	@grep -E '^[a-z-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-12s %s\n", $$1, $$2}'
@@ -103,7 +103,7 @@ merge-quant: ## 시드 0의 fold별 어댑터 병합 → AWQ 4bit
 	    --out outputs/awq/$(MODEL)/fold$${f}_seed0 --fold $$f $(QUANT_ARGS) || exit 1; \
 	done
 
-eval-merged: ## 병합 bf16을 fold별로 서빙해 판정, fold 0에서 부하 측정
+eval-merged: ## 병합 모델(MERGE_DTYPE)을 fold별로 서빙해 판정, fold 0에서 부하 측정
 	for f in $(FOLDS); do \
 	  scripts/with_vllm.sh outputs/merged/$(MODEL)/fold$${f}_seed0 $(MODEL)-merged-f$$f $(VLLM_ARGS) -- bash -c "\
 	    $(SERVE_PY) -m ko_judge.predict --mode score --served $(MODEL)-merged-f$$f --fold $$f \
@@ -126,3 +126,6 @@ eval-awq: ## AWQ 4bit를 fold별로 서빙해 판정, fold 0에서 부하 측정
 report: ## reports/RESULTS.md 생성 (GPU_USD_PER_HOUR=값 GPU_NAME=이름 PRICE_NOTE=요금 근거)
 	$(PY) -m ko_judge.cost --gpu-name "$(GPU_NAME)" --price-note "$(PRICE_NOTE)" \
 	  $(if $(GPU_USD_PER_HOUR),--gpu-usd-per-hour $(GPU_USD_PER_HOUR),)
+
+checks: ## 저장소의 예측·실행 기록에서 비교 수치 → reports/run_checks.json
+	$(PY) -m ko_judge.run_checks

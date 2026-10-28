@@ -5,7 +5,7 @@ import httpx
 import pytest
 
 from ko_judge import loadtest
-from ko_judge.generation import OpenAIBackend
+from ko_judge.generation import OpenAIBackend, default_base_url
 
 
 def test_percentile_nearest_rank():
@@ -23,6 +23,14 @@ def test_payloads():
     assert s["max_tokens"] == 1 and s["logprobs"] and s["top_logprobs"] == 20
     j = b.judge_payload([], seed=7)
     assert j["temperature"] == 0.3 and j["max_tokens"] == 512 and j["seed"] == 7
+
+
+def test_default_base_url_follows_port(monkeypatch):
+    """scripts/with_vllm.sh가 PORT로 띄운 서버를 predict·loadtest 기본값이 따라간다."""
+    monkeypatch.delenv("PORT", raising=False)
+    assert default_base_url() == "http://localhost:8000/v1"
+    monkeypatch.setenv("PORT", "8001")
+    assert default_base_url() == "http://localhost:8001/v1"
 
 
 def _mock(monkeypatch, module, handler):
