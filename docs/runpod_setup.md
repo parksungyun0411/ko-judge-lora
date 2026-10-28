@@ -87,6 +87,6 @@ make report GPU_USD_PER_HOUR=<실제 요금> GPU_NAME="RTX 4090"
 
 ## 먼저 확인할 것
 
-1. **kanana 설정 로드.** transformers 5.17·5.18은 kanana-1.5-2.1b 설정(hidden 1792, head 24, head_dim 128)을 거부합니다. 학습·병합·양자화는 `ko_judge.compat`로 우회하고, vLLM은 `vllm.general_plugins` 진입점으로 같은 우회를 겁니다. 서버에서 `make zeroshot MODEL=kanana-1.5-2.1b`가 설정 오류로 멈추면 플러그인이 불리지 않은 것이니 kanana를 빼고 진행합니다.
-2. **AWQ 체크포인트 로드.** 학습 환경의 llm-compressor 0.14.0은 compressed-tensors 0.19.0으로 저장하고 vLLM 0.30.0은 0.17.0을 씁니다. `make eval-awq`의 첫 fold에서 vLLM이 읽지 못하면 `.venv-train`에 `llmcompressor==0.12.0`(compressed-tensors 0.17.1, transformers ≤5.10.1)을 설치해 양자화만 다시 합니다.
-3. **logprob 토큰.** 점수만 모드는 첫 생성 토큰의 상위 20개 logprob에서 '1'~'5'를 찾습니다. 첫 fold 예측 파일에서 `dist`가 None인 행이 있으면 채팅 템플릿이 숫자 앞에 다른 토큰을 넣는 것이니 원인을 보고 고칩니다.
+1. **kanana 설정 로드.** transformers 5.17·5.18은 kanana-1.5-2.1b 설정(hidden 1792, head 24, head_dim 128)을 거부합니다. 학습·병합·양자화는 `ko_judge.compat`로 우회하고, vLLM은 `vllm.general_plugins` 진입점으로 같은 우회를 겁니다. 서버에서 `make zeroshot MODEL=kanana-1.5-2.1b`가 설정 오류로 멈추면 플러그인이 불리지 않은 것이니 kanana를 빼고 진행합니다. T4 실행에서는 vLLM이 플러그인으로 kanana 기반 모델·어댑터·병합 모델을 모두 읽었습니다.
+2. **AWQ 체크포인트 로드.** 학습 환경의 llm-compressor 0.14.0은 compressed-tensors 0.19.0으로 저장하고 vLLM 0.30.0은 0.17.0을 씁니다. `make eval-awq`의 첫 fold에서 vLLM이 읽지 못하면 `.venv-train`에 `llmcompressor==0.12.0`(compressed-tensors 0.17.1, transformers ≤5.10.1)을 설치해 양자화만 다시 합니다. T4 실행에서는 llm-compressor 0.14.0으로 저장한 체크포인트를 vLLM 0.30.0이 `MarlinLinearKernel`로 읽어 다섯 fold 모두 판정했습니다([kaggle_t4/vllm_awq_f0.log](kaggle_t4/vllm_awq_f0.log)).
+3. **logprob 토큰.** 점수만 모드는 첫 생성 토큰의 상위 20개 logprob에서 '1'~'5'를 찾습니다. 첫 fold 예측 파일에서 `dist`가 None인 행이 있으면 채팅 템플릿이 숫자 앞에 다른 토큰을 넣는 것이니 원인을 보고 고칩니다. T4 점검에서는 상위 토큰에 섞인 '①'을 숫자로 읽다 오류가 나서 ASCII 숫자만 받도록 고쳤고(`a2b5d90`), 그 뒤 LoRA 판정의 형식 실패는 0행이었습니다.
